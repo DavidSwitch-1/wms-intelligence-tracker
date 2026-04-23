@@ -1,365 +1,234 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
-type Company = {
-  id: string; name: string; industry: string; country: string; region: string; notes: string;
-  wms_entries: WmsEntry[]; news_updates: NewsUpdate[];
-}
-type WmsEntry = {
-  id: string; wms_system: string; vendor: string; version: string; status: string; site_name: string; notes: string;
-}
-type NewsUpdate = {
-  id: string; title: string; summary: string; impact_level: string; published_at: string;
-}
-type Message = { role: 'user' | 'assistant'; content: string }
-
-const WMS_COLORS: Record<string, string> = {
-  'Manhattan Associates': 'badge-manhattan',
-  'Blue Yonder': 'badge-blueyonder',
-}
-
-function wmsBadge(vendor: string) {
-  return WMS_COLORS[vendor] || 'badge-other'
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
+)
 
 export default function Home() {
-  const [companies, setCompanies] = useState<Company[]>([])
+  const [companies, setCompanies] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [filterVendor, setFilterVendor] = useState('All')
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "Hi! I'm your WMS Intelligence Assistant. Ask me anything about the companies and WMS systems in your database — e.g. *\"Who uses Manhattan Active?\"*, *\"What's happening with M&S?\"*, or *\"Compare Blue Yonder users\"*." }
+  const [messages, setMessages] = useState<any[]>([
+    { role: 'assistant', content: "Hi! I'm your WMS Intelligence Assistant. Ask me anything — e.g. \"Who uses Manhattan Active?\", \"What's happening with M&S?\", or \"List all Blue Yonder customers\"." }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'database' | 'chat' | 'add'>('database')
-  const [addForm, setAddForm] = useState({ name: '', industry: '', country: '', region: '', wms_system: '', vendor: '', version: '', site_name: '', notes: '' })
-  const [addLoading, setAddLoading] = useState(false)
-  const [addSuccess, setAddSuccess] = useState(false)
-  const chatEndRef = useRef<HTMLDivElement>(null)
+  const [tab, setTab] = useState<'db'|'chat'|'add'>('db')
+  const [form, setForm] = useState({ name:'', industry:'', country:'', region:'', wms_system:'', vendor:'', version:'', site_name:'', notes:'' })
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const chatEnd = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { loadCompanies() }, [])
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => { load() }, [])
+  useEffect(() => { chatEnd.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  async function loadCompanies() {
-    const { data } = await supabase
-      .from('companies')
-      .select('*, wms_entries(*), news_updates(*)')
-      .order('name')
-    if (data) setCompanies(data as Company[])
+  async function load() {
+    const { data } = await supabase.from('companies').select('*, wms_entries(*), news_updates(*)').order('name')
+    if (data) setCompanies(data)
   }
 
   const filtered = companies.filter(c => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.wms_entries?.some(w => w.wms_system.toLowerCase().includes(search.toLowerCase()) || w.vendor.toLowerCase().includes(search.toLowerCase()))
-    const matchVendor = filterVendor === 'All' || c.wms_entries?.some(w => w.vendor === filterVendor)
+    const q = search.toLowerCase()
+    const matchSearch = !q || c.name.toLowerCase().includes(q) || c.wms_entries?.some((w: any) => w.wms_system?.toLowerCase().includes(q) || w.vendor?.toLowerCase().includes(q))
+    const matchVendor = filterVendor === 'All' || c.wms_entries?.some((w: any) => w.vendor === filterVendor)
     return matchSearch && matchVendor
   })
 
-  async function sendMessage() {
+  const vendors = ['All', ...Array.from(new Set(companies.flatMap((c: any) => c.wms_entries?.map((w: any) => w.vendor).filter(Boolean) || [])))] as string[]
+
+  async function send() {
     if (!input.trim() || loading) return
-    const userMsg = input.trim()
+    const msg = input.trim()
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: userMsg }])
+    setMessages(prev => [...prev, { role: 'user', content: msg }])
     setLoading(true)
-
     try {
-      // Build context from DB
-      const ctx = companies.map(c => {
-        const wms = c.wms_entries?.map(w => `${w.wms_system} (${w.vendor}, v${w.version})${w.site_name ? ` at ${w.site_name}` : ''}`).join(', ')
-        const news = c.news_updates?.map(n => `[${n.impact_level}] ${n.title}: ${n.summary}`).join(' | ')
-        return `${c.name} (${c.industry}, ${c.country}): WMS=${wms || 'Unknown'}${news ? ` | News: ${news}` : ''}${c.notes ? ` | Notes: ${c.notes}` : ''}`
+      const ctx = companies.map((c: any) => {
+        const wms = c.wms_entries?.map((w: any) => `${w.wms_system} (${w.vendor}${w.version ? ', '+w.version : ''})${w.site_name ? ' at '+w.site_name : ''}`).join(', ')
+        const news = c.news_updates?.map((n: any) => n.title).join(' | ')
+        return `${c.name} (${c.industry||''}, ${c.country||''}): WMS=${wms||'Unknown'}${news ? ' | News: '+news : ''}${c.notes ? ' | '+c.notes : ''}`
       }).join('\n')
-
-      const systemPrompt = `You are a WMS (Warehouse Management System) intelligence expert assistant for a logistics/supply chain consultancy team. You have access to a live database of companies and their WMS systems.
-
-CURRENT DATABASE:
-${ctx}
-
-Answer questions about this data concisely and helpfully. When relevant, mention specific companies, WMS versions, vendors, and news. Format your answers clearly. If asked about companies not in the database, say so and suggest they add the data.`
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, { role: 'user', content: userMsg }], system: systemPrompt })
+      const res = await fetch('/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: `You are a WMS Intelligence expert for a supply chain consultancy. You have this live database:\n\n${ctx}\n\nAnswer questions concisely and helpfully about companies, WMS systems, versions, vendors and news.`,
+          messages: [...messages, { role: 'user', content: msg }]
+        })
       })
-      const data = await response.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.content }])
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong. Please try again.' }])
-    }
+      const d = await res.json()
+      setMessages(prev => [...prev, { role: 'assistant', content: d.content }])
+    } catch { setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong.' }]) }
     setLoading(false)
   }
 
-  async function addCompany() {
-    if (!addForm.name || !addForm.wms_system) return
-    setAddLoading(true)
-    const { data: company } = await supabase
-      .from('companies')
-      .insert({ name: addForm.name, industry: addForm.industry, country: addForm.country, region: addForm.region, notes: addForm.notes })
-      .select().single()
-    if (company) {
-      await supabase.from('wms_entries').insert({
-        company_id: company.id, wms_system: addForm.wms_system, vendor: addForm.vendor,
-        version: addForm.version, site_name: addForm.site_name, status: 'Active'
-      })
-    }
-    setAddLoading(false)
-    setAddSuccess(true)
-    setAddForm({ name: '', industry: '', country: '', region: '', wms_system: '', vendor: '', version: '', site_name: '', notes: '' })
-    loadCompanies()
-    setTimeout(() => setAddSuccess(false), 3000)
+  async function addEntry() {
+    if (!form.name || !form.wms_system) return
+    setSaving(true)
+    const { data: co } = await supabase.from('companies').insert({ name: form.name, industry: form.industry, country: form.country, region: form.region, notes: form.notes }).select().single()
+    if (co) await supabase.from('wms_entries').insert({ company_id: co.id, wms_system: form.wms_system, vendor: form.vendor, version: form.version, site_name: form.site_name, status: 'Active' })
+    setSaving(false); setSaved(true)
+    setForm({ name:'', industry:'', country:'', region:'', wms_system:'', vendor:'', version:'', site_name:'', notes:'' })
+    load(); setTimeout(() => setSaved(false), 3000)
   }
 
-  const vendors = ['All', ...Array.from(new Set(companies.flatMap(c => c.wms_entries?.map(w => w.vendor) || [])))]
+  const vendorColor = (v: string) => v?.includes('Manhattan') ? '#a78bfa' : v?.includes('Blue Yonder') ? '#60a5fa' : '#9ca3af'
+  const vendorBg = (v: string) => v?.includes('Manhattan') ? 'rgba(139,92,246,0.12)' : v?.includes('Blue Yonder') ? 'rgba(59,130,246,0.12)' : 'rgba(107,114,128,0.12)'
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #0a0e1a 0%, #0d1424 50%, #0a0e1a 100%)' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg,#0a0e1a,#0d1424)', color: '#e2e8f0', fontFamily: 'system-ui,sans-serif' }}>
       {/* Header */}
-      <header className="border-b border-white/8 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
-            📦
-          </div>
+      <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>📦</div>
           <div>
-            <h1 className="text-white font-semibold text-sm tracking-wide">WMS Intelligence</h1>
-            <p className="text-white/40 text-xs">{companies.length} companies tracked</p>
+            <div style={{ fontWeight: 600, fontSize: 14 }}>WMS Intelligence</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{companies.length} companies tracked</div>
           </div>
         </div>
-        <div className="flex gap-1">
-          {(['database', 'chat', 'add'] as const).map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${activeTab === tab ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-white/50 hover:text-white/80'}`}>
-              {tab === 'database' ? '🗃 Database' : tab === 'chat' ? '🤖 AI Assistant' : '➕ Add Entry'}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {(['db','chat','add'] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{ padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', border: tab===t ? '1px solid rgba(59,130,246,0.4)' : '1px solid transparent', background: tab===t ? 'rgba(59,130,246,0.15)' : 'transparent', color: tab===t ? '#60a5fa' : 'rgba(255,255,255,0.5)' }}>
+              {t==='db'?'🗃 Database':t==='chat'?'🤖 AI Assistant':'➕ Add Entry'}
             </button>
           ))}
         </div>
-      </header>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: 24 }}>
 
-        {/* DATABASE TAB */}
-        {activeTab === 'database' && (
+        {/* DATABASE */}
+        {tab === 'db' && (
           <div>
-            {/* Search & Filter */}
-            <div className="flex gap-3 mb-6">
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies or WMS systems..."
-                className="flex-1 glass rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none focus:border-blue-500/50 transition-all"
-                style={{ background: 'rgba(255,255,255,0.04)' }} />
-              <select value={filterVendor} onChange={e => setFilterVendor(e.target.value)}
-                className="glass rounded-xl px-4 py-3 text-sm text-white/80 outline-none"
-                style={{ background: 'rgba(255,255,255,0.06)' }}>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search companies or WMS systems..." style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 16px', color: '#e2e8f0', fontSize: 14, outline: 'none' }} />
+              <select value={filterVendor} onChange={e => setFilterVendor(e.target.value)} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, padding: '10px 16px', color: '#e2e8f0', fontSize: 14, outline: 'none' }}>
                 {vendors.map(v => <option key={v} value={v} style={{ background: '#1a2035' }}>{v}</option>)}
               </select>
             </div>
-
-            {/* Stats row */}
-            <div className="grid grid-cols-4 gap-3 mb-6">
+            {/* Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
               {[
                 { label: 'Total Companies', value: companies.length, color: '#60a5fa' },
-                { label: 'Manhattan Active', value: companies.filter(c => c.wms_entries?.some(w => w.vendor === 'Manhattan Associates')).length, color: '#a78bfa' },
-                { label: 'Blue Yonder', value: companies.filter(c => c.wms_entries?.some(w => w.vendor === 'Blue Yonder')).length, color: '#34d399' },
-                { label: 'Active News', value: companies.reduce((n, c) => n + (c.news_updates?.length || 0), 0), color: '#f87171' },
+                { label: 'Manhattan Active', value: companies.filter((c: any) => c.wms_entries?.some((w: any) => w.vendor?.includes('Manhattan'))).length, color: '#a78bfa' },
+                { label: 'Blue Yonder', value: companies.filter((c: any) => c.wms_entries?.some((w: any) => w.vendor?.includes('Blue Yonder'))).length, color: '#34d399' },
+                { label: 'Active News', value: companies.reduce((n: number, c: any) => n + (c.news_updates?.length||0), 0), color: '#f87171' },
               ].map(s => (
-                <div key={s.label} className="glass rounded-xl p-4">
-                  <div className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</div>
-                  <div className="text-white/40 text-xs mt-1">{s.label}</div>
+                <div key={s.label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 16 }}>
+                  <div style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>{s.label}</div>
                 </div>
               ))}
             </div>
-
-            {/* Company cards */}
-            <div className="grid gap-3">
-              {filtered.map(company => (
-                <div key={company.id} className="glass rounded-xl p-5 hover:border-white/15 transition-all">
-                  <div className="flex items-start justify-between mb-3">
+            {/* Cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {filtered.map((c: any) => (
+                <div key={c.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
                     <div>
-                      <h3 className="text-white font-semibold">{company.name}</h3>
-                      <p className="text-white/40 text-xs mt-0.5">{company.industry} · {company.country}{company.region ? ` · ${company.region}` : ''}</p>
+                      <div style={{ fontWeight: 600, fontSize: 15 }}>{c.name}</div>
+                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2 }}>{[c.industry, c.country, c.region].filter(Boolean).join(' · ')}</div>
                     </div>
-                    {company.news_updates?.length > 0 && (
-                      <span className="badge-high text-xs px-2 py-0.5 rounded-full">📰 {company.news_updates.length} update{company.news_updates.length > 1 ? 's' : ''}</span>
-                    )}
+                    {c.news_updates?.length > 0 && <span style={{ background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 20, padding: '3px 10px', fontSize: 11 }}>📰 {c.news_updates.length} update{c.news_updates.length>1?'s':''}</span>}
                   </div>
-                  {/* WMS entries */}
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {company.wms_entries?.map(w => (
-                      <div key={w.id} className={`${wmsBadge(w.vendor)} text-xs px-3 py-1.5 rounded-lg`}>
-                        <span className="font-medium">{w.wms_system}</span>
-                        {w.version && <span className="opacity-70"> · {w.version}</span>}
-                        {w.site_name && <span className="opacity-70"> · {w.site_name}</span>}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                    {c.wms_entries?.map((w: any) => (
+                      <div key={w.id} style={{ background: vendorBg(w.vendor), color: vendorColor(w.vendor), border: `1px solid ${vendorColor(w.vendor)}40`, borderRadius: 8, padding: '6px 12px', fontSize: 12 }}>
+                        <strong>{w.wms_system}</strong>{w.version && <span style={{ opacity: 0.7 }}> · {w.version}</span>}{w.site_name && <span style={{ opacity: 0.7 }}> · {w.site_name}</span>}
                       </div>
                     ))}
                   </div>
-                  {/* News */}
-                  {company.news_updates?.map(n => (
-                    <div key={n.id} className="mt-2 rounded-lg px-3 py-2 text-xs" style={{ background: 'rgba(239,68,68,0.07)', borderLeft: '2px solid rgba(239,68,68,0.4)' }}>
-                      <span className="text-red-400 font-medium">{n.title}</span>
-                      {n.summary && <span className="text-white/50 ml-2">— {n.summary}</span>}
+                  {c.news_updates?.map((n: any) => (
+                    <div key={n.id} style={{ background: 'rgba(239,68,68,0.07)', borderLeft: '2px solid rgba(239,68,68,0.5)', borderRadius: '0 6px 6px 0', padding: '6px 10px', fontSize: 12, marginTop: 6 }}>
+                      <span style={{ color: '#f87171', fontWeight: 500 }}>{n.title}</span>
+                      {n.summary && <span style={{ color: 'rgba(255,255,255,0.45)', marginLeft: 6 }}>— {n.summary}</span>}
                     </div>
                   ))}
-                  {company.notes && <p className="text-white/30 text-xs mt-2 italic">{company.notes}</p>}
+                  {c.notes && <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, marginTop: 8, fontStyle: 'italic' }}>{c.notes}</div>}
                 </div>
               ))}
-              {filtered.length === 0 && (
-                <div className="text-center py-16 text-white/30">
-                  <div className="text-4xl mb-3">🔍</div>
-                  <p>No companies match your search</p>
+              {filtered.length === 0 && <div style={{ textAlign: 'center', padding: 60, color: 'rgba(255,255,255,0.3)' }}>🔍 No companies match your search</div>}
+            </div>
+          </div>
+        )}
+
+        {/* CHAT */}
+        {tab === 'chat' && (
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 160px)' }}>
+            <div style={{ padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399' }}></div>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Claude connected · {companies.length} companies in context</span>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {messages.map((m, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: m.role==='user'?'flex-end':'flex-start', gap: 10 }}>
+                  {m.role==='assistant' && <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#3b82f6,#8b5cf6)', display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,flexShrink:0 }}>🤖</div>}
+                  <div style={{ maxWidth: '70%', borderRadius: 16, padding: '10px 16px', fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap', background: m.role==='user' ? 'linear-gradient(135deg,#3b82f6,#2563eb)' : 'rgba(255,255,255,0.07)', color: m.role==='user' ? '#fff' : 'rgba(255,255,255,0.85)' }}>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div style={{ display:'flex', gap:10 }}>
+                  <div style={{ width:28,height:28,borderRadius:8,background:'linear-gradient(135deg,#3b82f6,#8b5cf6)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13 }}>🤖</div>
+                  <div style={{ background:'rgba(255,255,255,0.07)',borderRadius:16,padding:'12px 16px',display:'flex',gap:6,alignItems:'center' }}>
+                    {[0,1,2].map(i => <div key={i} style={{ width:8,height:8,borderRadius:'50%',background:'#60a5fa',animation:`blink 1.2s ${i*0.2}s infinite` }}></div>)}
+                  </div>
                 </div>
               )}
+              <div ref={chatEnd}/>
+            </div>
+            <div style={{ padding: 16, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display:'flex',gap:10,marginBottom:8 }}>
+                <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&send()} placeholder="Ask about any WMS system, company, or trend..." style={{ flex:1,background:'rgba(255,255,255,0.07)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:12,padding:'10px 16px',color:'#e2e8f0',fontSize:14,outline:'none' }} />
+                <button onClick={send} disabled={loading||!input.trim()} style={{ padding:'10px 20px',borderRadius:12,background:'linear-gradient(135deg,#3b82f6,#2563eb)',color:'#fff',border:'none',fontSize:14,cursor:'pointer',opacity:loading||!input.trim()?0.4:1 }}>Send</button>
+              </div>
+              <div style={{ display:'flex',gap:6,flexWrap:'wrap' }}>
+                {['Who uses Manhattan Active?',"What's happening with M&S?",'List all Blue Yonder customers','Compare WMS vendors'].map(q=>(
+                  <button key={q} onClick={()=>setInput(q)} style={{ fontSize:11,color:'rgba(255,255,255,0.4)',background:'transparent',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>{q}</button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* CHAT TAB */}
-        {activeTab === 'chat' && (
-          <div className="flex flex-col" style={{ height: 'calc(100vh - 160px)' }}>
-            <div className="glass rounded-xl flex flex-col h-full overflow-hidden">
-              <div className="px-5 py-3 border-b border-white/8 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                <span className="text-white/60 text-sm">Claude is connected · {companies.length} companies in context</span>
-              </div>
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-4 chat-scroll">
-                {messages.map((m, i) => (
-                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {m.role === 'assistant' && (
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs mr-2 flex-shrink-0 mt-0.5"
-                        style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>🤖</div>
-                    )}
-                    <div className={`max-w-2xl rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                      m.role === 'user'
-                        ? 'text-white' : 'text-white/85'
-                    }`} style={{
-                      background: m.role === 'user' ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : 'rgba(255,255,255,0.06)',
-                      whiteSpace: 'pre-wrap'
-                    }}>
-                      {m.content}
-                    </div>
+        {/* ADD */}
+        {tab === 'add' && (
+          <div style={{ maxWidth: 640 }}>
+            <div style={{ background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:16,padding:24 }}>
+              <div style={{ fontWeight:600,fontSize:16,marginBottom:20 }}>Add New Company & WMS Entry</div>
+              <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12 }}>
+                {[['Company Name *','name','e.g. ASOS'],['Industry','industry','e.g. Fashion Retail'],['Country','country','e.g. United Kingdom'],['Region','region','e.g. EMEA']].map(([label,field,ph])=>(
+                  <div key={field}>
+                    <div style={{ fontSize:11,color:'rgba(255,255,255,0.5)',marginBottom:6 }}>{label}</div>
+                    <input value={(form as any)[field]} onChange={e=>setForm({...form,[field]:e.target.value})} placeholder={ph} style={{ width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#e2e8f0',fontSize:13,outline:'none',boxSizing:'border-box' }} />
                   </div>
                 ))}
-                {loading && (
-                  <div className="flex justify-start">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs mr-2"
-                      style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>🤖</div>
-                    <div className="glass rounded-2xl px-4 py-3 flex gap-1.5 items-center">
-                      <div className="typing-dot w-2 h-2 rounded-full bg-blue-400"></div>
-                      <div className="typing-dot w-2 h-2 rounded-full bg-blue-400"></div>
-                      <div className="typing-dot w-2 h-2 rounded-full bg-blue-400"></div>
-                    </div>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
               </div>
-              {/* Input */}
-              <div className="p-4 border-t border-white/8">
-                <div className="flex gap-3">
-                  <input value={input} onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                    placeholder="Ask about any WMS system, company, or trend..."
-                    className="flex-1 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 outline-none"
-                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }} />
-                  <button onClick={sendMessage} disabled={loading || !input.trim()}
-                    className="px-5 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
-                    style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white' }}>
-                    Send
-                  </button>
-                </div>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  {['Who uses Manhattan Active?', 'What\'s happening with M&S?', 'List all Blue Yonder customers', 'Compare WMS vendors'].map(q => (
-                    <button key={q} onClick={() => { setInput(q) }}
-                      className="text-xs text-white/40 hover:text-white/70 px-2 py-1 rounded-lg border border-white/8 hover:border-white/20 transition-all">
-                      {q}
-                    </button>
-                  ))}
-                </div>
+              <div style={{ borderTop:'1px solid rgba(255,255,255,0.08)',margin:'12px 0' }}/>
+              <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12 }}>
+                {[['WMS System *','wms_system','e.g. Manhattan Active WM'],['Vendor','vendor','e.g. Manhattan Associates'],['Version','version','e.g. Active (Cloud)'],['Site / Hub','site_name','e.g. Germany Hub']].map(([label,field,ph])=>(
+                  <div key={field}>
+                    <div style={{ fontSize:11,color:'rgba(255,255,255,0.5)',marginBottom:6 }}>{label}</div>
+                    <input value={(form as any)[field]} onChange={e=>setForm({...form,[field]:e.target.value})} placeholder={ph} style={{ width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#e2e8f0',fontSize:13,outline:'none',boxSizing:'border-box' }} />
+                  </div>
+                ))}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ADD ENTRY TAB */}
-        {activeTab === 'add' && (
-          <div className="max-w-2xl">
-            <div className="glass rounded-xl p-6">
-              <h2 className="text-white font-semibold mb-5">Add New Company & WMS Entry</h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Company Name *</label>
-                    <input value={addForm.name} onChange={e => setAddForm({...addForm, name: e.target.value})}
-                      className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-                      placeholder="e.g. ASOS" />
-                  </div>
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Industry</label>
-                    <input value={addForm.industry} onChange={e => setAddForm({...addForm, industry: e.target.value})}
-                      className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-                      placeholder="e.g. Fashion Retail" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Country</label>
-                    <input value={addForm.country} onChange={e => setAddForm({...addForm, country: e.target.value})}
-                      className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-                      placeholder="e.g. United Kingdom" />
-                  </div>
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Region</label>
-                    <input value={addForm.region} onChange={e => setAddForm({...addForm, region: e.target.value})}
-                      className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-                      placeholder="e.g. EMEA" />
-                  </div>
-                </div>
-                <hr className="border-white/8" />
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">WMS System *</label>
-                    <input value={addForm.wms_system} onChange={e => setAddForm({...addForm, wms_system: e.target.value})}
-                      className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-                      placeholder="e.g. Manhattan Active WM" />
-                  </div>
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Vendor</label>
-                    <input value={addForm.vendor} onChange={e => setAddForm({...addForm, vendor: e.target.value})}
-                      className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-                      placeholder="e.g. Manhattan Associates" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Version</label>
-                    <input value={addForm.version} onChange={e => setAddForm({...addForm, version: e.target.value})}
-                      className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-                      placeholder="e.g. Active (Cloud)" />
-                  </div>
-                  <div>
-                    <label className="text-white/50 text-xs mb-1.5 block">Site / Hub</label>
-                    <input value={addForm.site_name} onChange={e => setAddForm({...addForm, site_name: e.target.value})}
-                      className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none"
-                      placeholder="e.g. UK DC, Germany Hub" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-white/50 text-xs mb-1.5 block">Notes / Intel</label>
-                  <textarea value={addForm.notes} onChange={e => setAddForm({...addForm, notes: e.target.value})} rows={3}
-                    className="w-full glass rounded-lg px-3 py-2.5 text-sm text-white outline-none resize-none"
-                    placeholder="Any additional intel, news, or context..." />
-                </div>
-                <button onClick={addCompany} disabled={addLoading || !addForm.name || !addForm.wms_system}
-                  className="w-full py-3 rounded-xl text-sm font-medium transition-all disabled:opacity-30"
-                  style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: 'white' }}>
-                  {addLoading ? 'Saving...' : 'Add to Database'}
-                </button>
-                {addSuccess && (
-                  <div className="badge-info text-center py-2 rounded-lg text-sm">✓ Added successfully!</div>
-                )}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:11,color:'rgba(255,255,255,0.5)',marginBottom:6 }}>Notes / Intel</div>
+                <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3} placeholder="Any additional intel, news, or context..." style={{ width:'100%',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,padding:'10px 12px',color:'#e2e8f0',fontSize:13,outline:'none',resize:'none',boxSizing:'border-box' }} />
               </div>
+              <button onClick={addEntry} disabled={saving||!form.name||!form.wms_system} style={{ width:'100%',padding:'12px',borderRadius:12,background:'linear-gradient(135deg,#3b82f6,#2563eb)',color:'#fff',border:'none',fontSize:14,fontWeight:500,cursor:'pointer',opacity:saving||!form.name||!form.wms_system?0.4:1 }}>
+                {saving?'Saving...':'Add to Database'}
+              </button>
+              {saved && <div style={{ marginTop:10,background:'rgba(16,185,129,0.15)',color:'#34d399',border:'1px solid rgba(16,185,129,0.3)',borderRadius:10,padding:'8px 0',textAlign:'center',fontSize:13 }}>✓ Added successfully!</div>}
             </div>
           </div>
         )}
       </div>
+      <style>{`@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}`}</style>
     </div>
   )
 }
