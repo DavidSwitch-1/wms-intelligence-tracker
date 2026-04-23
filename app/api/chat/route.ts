@@ -7,21 +7,23 @@ export async function POST(req: NextRequest) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
+      'x-api-key': process.env.ANTHROPIC_API_KEY || '',
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system,
-      messages: messages.filter((m: {role: string}) => m.role !== 'system').map((m: {role: string, content: string}) => ({
-        role: m.role,
-        content: m.content,
-      })),
+      messages: messages
+        .filter((m: {role: string}) => m.role !== 'system')
+        .map((m: {role: string; content: string}) => ({
+          role: m.role,
+          content: m.content,
+        })),
     }),
   })
 
   const data = await response.json()
-  const content = data.content?.[0]?.text || 'Sorry, I could not generate a response.'
+  const content = data.content?.[0]?.text || 'Sorry, could not generate a response.'
   return NextResponse.json({ content })
 }
