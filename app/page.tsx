@@ -7,22 +7,6 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 )
 
-function timeAgo(iso: string | null | undefined): string | null {
-  if (!iso) return null
-  const diff = Date.now() - new Date(iso).getTime()
-  if (diff < 0) return 'just now'
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-  const months = Math.floor(days / 30)
-  if (months < 12) return `${months}mo ago`
-  return `${Math.floor(months / 12)}y ago`
-}
-
 const C = {
   bg:'#f0f2f5', surface:'#ffffff', surfaceAlt:'#f7f8fa',
   border:'#e2e6ea', borderHov:'#c8cdd4',
@@ -54,8 +38,6 @@ export default function Home() {
   const [researchResults, setResearchResults] = useState<Record<string,string>>({})
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [refreshing, setRefreshing] = useState(false)
-  const [showDismissed, setShowDismissed] = useState(false)
-  const [updatingNews, setUpdatingNews] = useState<Record<string, boolean>>({})
   const chatEnd = useRef<HTMLDivElement>(null)
   const refreshTimer = useRef<any>(null)
 
@@ -123,24 +105,9 @@ export default function Home() {
     setResearching(prev => ({ ...prev, [company.id]: false }))
   }
 
-  async function setNewsStatus(newsId: string, status: 'pending' | 'verified' | 'dismissed') {
-    if (updatingNews[newsId]) return
-    setUpdatingNews(prev => ({ ...prev, [newsId]: true }))
-    try {
-      await fetch(`/api/news/${newsId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status })
-      })
-      await load()
-    } catch {}
-    setUpdatingNews(prev => ({ ...prev, [newsId]: false }))
-  }
-
   // All news across all companies, sorted newest first
   const allNews = companies
     .flatMap(c => (c.news_updates || []).map((n: any) => ({ ...n, companyName: c.name, companyId: c.id })))
-    .filter(n => showDismissed || n.status !== 'dismissed')
     .sort((a, b) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
 
   const filtered = companies.filter(c => {
@@ -484,10 +451,6 @@ export default function Home() {
                 <p style={{ margin:'4px 0 0', fontSize:13, color:C.textSub }}>All news, research findings, and WMS updates — newest first. Auto-refreshes every 5 minutes.</p>
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                <label style={{ fontSize:12, color:C.textSub, display:'flex', alignItems:'center', gap:6, cursor:'pointer' }}>
-                  <input type="checkbox" checked={showDismissed} onChange={e => setShowDismissed(e.target.checked)} style={{ margin:0 }} />
-                  Show dismissed
-                </label>
                 <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>
                 <button onClick={load} disabled={refreshing}
                   style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'7px 14px', fontSize:13, fontWeight:600, cursor:refreshing?'default':'pointer', opacity:refreshing?0.6:1, display:'flex', alignItems:'center', gap:6 }}>
@@ -508,18 +471,13 @@ export default function Home() {
                 {allNews.map((n: any, i: number) => {
                   const company = companies.find(c => c.id === n.companyId)
                   const isRecent = new Date(n.published_at||n.created_at).getTime() > Date.now() - 24*60*60*1000
-                  const isVerified = n.status === 'verified'
-                const isDismissed = n.status === 'dismissed'
-                const isUpdating = updatingNews[n.id]
-                return (
+                  return (
                     <div key={n.id || i}
-                      style={{ background: isDismissed ? C.grayLight : C.surface, border:`1px solid ${isVerified ? C.greenBorder : isRecent ? C.blueBorder : C.border}`, borderRadius:12, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', cursor:'pointer', opacity: isDismissed ? 0.55 : 1 }}
+                      style={{ background:C.surface, border:`1px solid ${isRecent ? C.blueBorder : C.border}`, borderRadius:12, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', cursor:'pointer' }}
                       onClick={() => { setSelected(company); setTab('db') }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
                         <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                           {isRecent && <span style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:20, padding:'2px 8px', fontSize:10, fontWeight:700 }}>NEW</span>}
-                          {isVerified && <span style={{ background:C.greenLight, color:C.green, border:`1px solid ${C.greenBorder}`, borderRadius:20, padding:'2px 8px', fontSize:10, fontWeight:700 }}>✓ VERIFIED</span>}
-                          {isDismissed && <span style={{ background:C.grayLight, color:C.textSub, border:`1px solid ${C.grayBorder}`, borderRadius:20, padding:'2px 8px', fontSize:10, fontWeight:700 }}>DISMISSED</span>}
                           <span style={{ background: n.impact_level === 'High' ? C.redLight : n.impact_level === 'Info' ? C.greenLight : C.amberLight,
                             color: n.impact_level === 'High' ? C.red : n.impact_level === 'Info' ? C.green : C.amber,
                             border: `1px solid ${n.impact_level === 'High' ? C.redBorder : n.impact_level === 'Info' ? C.greenBorder : C.amberBorder}`,
@@ -533,20 +491,10 @@ export default function Home() {
                       </div>
                       <div style={{ fontWeight:600, fontSize:14, color:C.text, marginBottom:4 }}>{n.title}</div>
                       {n.summary && <div style={{ fontSize:13, color:C.textSub, marginBottom:6 }}>{n.summary}</div>}
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
-                        <div style={{ display:'flex', gap:10, alignItems:'center', flex:1, minWidth:0 }}>
-                          <span style={{ fontSize:12, color:C.blue, fontWeight:500 }}>{n.companyName}</span>
-                          {company?.last_researched_at && (
-                            <span style={{ fontSize:11, color:C.textMuted }}>· last researched {timeAgo(company.last_researched_at)}</span>
-                          )}
-                        </div>
-                        <div style={{ display:'flex', gap:6, alignItems:'center', flexShrink:0 }}>
-                          {!isVerified && <button onClick={e => { e.stopPropagation(); setNewsStatus(n.id, 'verified') }} disabled={isUpdating} style={ fontSize:11, padding:'3px 9px', borderRadius:6, background:C.greenLight, color:C.green, border:`1px solid ${C.greenBorder}`, cursor:isUpdating ? 'default' : 'pointer', opacity:isUpdating ? 0.5 : 1, fontWeight:500 }>✓ Verify</button>}
-                          {isVerified && <button onClick={e => { e.stopPropagation(); setNewsStatus(n.id, 'pending') }} disabled={isUpdating} style={ fontSize:11, padding:'3px 9px', borderRadius:6, background:C.surfaceAlt, color:C.textSub, border:`1px solid ${C.border}`, cursor:isUpdating ? 'default' : 'pointer', opacity:isUpdating ? 0.5 : 1, fontWeight:500 }>Unverify</button>}
-                          {!isDismissed && <button onClick={e => { e.stopPropagation(); setNewsStatus(n.id, 'dismissed') }} disabled={isUpdating} style={ fontSize:11, padding:'3px 9px', borderRadius:6, background:C.surfaceAlt, color:C.textSub, border:`1px solid ${C.border}`, cursor:isUpdating ? 'default' : 'pointer', opacity:isUpdating ? 0.5 : 1, fontWeight:500 }>✕ Dismiss</button>}
-                          {isDismissed && <button onClick={e => { e.stopPropagation(); setNewsStatus(n.id, 'pending') }} disabled={isUpdating} style={ fontSize:11, padding:'3px 9px', borderRadius:6, background:C.surfaceAlt, color:C.textSub, border:`1px solid ${C.border}`, cursor:isUpdating ? 'default' : 'pointer', opacity:isUpdating ? 0.5 : 1, fontWeight:500 }>Restore</button>}
-                          {n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none', marginLeft:4 }}>Source ↗</a>}
-                        </div>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <span style={{ fontSize:12, color:C.blue, fontWeight:500 }}>{n.companyName}</span>
+                        {n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none' }}>Source ↗</a>}
+                      </div>
                     </div>
                   )
                 })}
