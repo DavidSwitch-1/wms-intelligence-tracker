@@ -13,11 +13,11 @@ export async function GET(req: NextRequest) {
     ? `https://${process.env.VERCEL_URL}`
     : 'https://wms-intelligence-tracker.vercel.app'
 
-  // Run a full sweep of 50 companies overnight
+  // Run a full sweep of 100 companies overnight
   const res = await fetch(`${baseUrl}/api/sweep`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ count: 50, mode: 'cron' })
+    body: JSON.stringify({ count: 100, mode: 'cron' })
   })
 
   const data = await res.json()
