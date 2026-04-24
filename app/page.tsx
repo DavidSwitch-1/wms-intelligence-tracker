@@ -117,10 +117,14 @@ export default function Home() {
     const q = search.toLowerCase()
     const matchSearch = !q || c.name.toLowerCase().includes(q) ||
       c.wms_entries?.some((w: any) => w.wms_system?.toLowerCase().includes(q) || w.vendor?.toLowerCase().includes(q))
-    const matchVendor = filterVendor === 'All' ||
-      filterVendor === 'Unknown'
-        ? filterVendor === 'Unknown' && c.wms_entries?.some((w: any) => w.wms_system === 'Unknown' || w.status === 'Needs Verification')
-        : c.wms_entries?.some((w: any) => w.vendor?.includes(filterVendor))
+    let matchVendor = true
+    if (filterVendor === 'Unknown') {
+      matchVendor = c.wms_entries?.some((w: any) => w.wms_system === 'Unknown' || w.status === 'Needs Verification')
+    } else if (filterVendor === 'In-House') {
+      matchVendor = c.wms_entries?.some((w: any) => w.vendor === 'In-House')
+    } else if (filterVendor !== 'All') {
+      matchVendor = c.wms_entries?.some((w: any) => w.vendor?.includes(filterVendor))
+    }
     return matchSearch && matchVendor
   })
 
@@ -251,8 +255,7 @@ export default function Home() {
             {/* Stat cards */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
               {stats.map(s => {
-                const active = (s.filter === 'All' && filterVendor === 'All' && tab === 'db') ||
-                  (s.filter === 'news' && tab === 'news') ||
+                const active = (s.filter === 'news' && tab === 'news') ||
                   (s.filter !== 'All' && s.filter !== 'news' && filterVendor === s.filter && tab === 'db')
                 return (
                   <div key={s.label} onClick={() => handleStatClick(s)}
