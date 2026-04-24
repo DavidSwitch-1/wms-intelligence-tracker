@@ -65,75 +65,44 @@ export default function Home() {
     chatEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // On-visit sweep: 10 companies per visit
-  // Mix of unknowns (priority) + known companies that haven't been checked recently
+  // On-visit sweep: calls /api/sweep which researches 10 companies
+  // prioritising unknowns first, then companies not recently checked
+  const sweepDone = useRef(false)
   useEffect(() => {
-    if (companies.length === 0) return
-
-    // Priority 1: unknowns that haven't been auto-researched
-    const unknowns = companies
-      .filter(c => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown') && !c.last_researched_at)
-      .slice(0, 5)
-
-    // Priority 2: known companies not researched in last 7 days (or never)
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    const stale = companies
-      .filter(c => {
-        const hasKnownWMS = c.wms_entries?.some((w: any) => w.wms_system !== 'Unknown')
-        const notRecentlyResearched = !c.last_researched_at || new Date(c.last_researched_at) < sevenDaysAgo
-        const notAlreadyQueued = !unknowns.find(u => u.id === c.id)
-        return hasKnownWMS && notRecentlyResearched && notAlreadyQueued
-      })
-      // Shuffle so different companies get picked each visit
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 5)
-
-    const toResearch = [...unknowns, ...stale]
-
-    toResearch.forEach((c, i) => {
-      const mode = c.wms_entries?.some((w: any) => w.wms_system === 'Unknown') ? 'unknown' : 'news'
-      setTimeout(() => researchCompanyWithMode(c, mode, true), i * 3000)
-    })
+    if (companies.length === 0 || sweepDone.current) return
+    sweepDone.current = true
+    fetch('/api/sweep', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ count: 10, mode: 'visit' })
+    }).then(r => r.json()).then(d => {
+      if (d.findings > 0) setTimeout(load, 1500)
+    }).catch(() => {})
   }, [companies.length > 0 ? companies[0]?.id : null])
 
-  async function researchCompanyWithMode(company: any, mode: string, silent = false) {
+  // Manual research button on company detail panel
+  async function researchCompany(company: any, silent = false) {
     if (researching[company.id]) return
     setResearching(prev => ({ ...prev, [company.id]: true }))
-    if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: mode === 'unknown' ? '🔍 Searching for WMS...' : '🔍 Checking for news...' }))
-
+    if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: '🔍 Searching...' }))
     try {
-      const res = await fetch('/api/research', {
+      const res = await fetch('/api/sweep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          companyId: company.id,
-          companyName: company.name,
-          industry: company.industry || '',
-          country: company.country || '',
-          mode
-        })
+        body: JSON.stringify({ count: 1, mode: 'manual', targetId: company.id })
       })
       const d = await res.json()
-      if (d.updated && d.result) {
-        if (!silent) {
-          const msg = mode === 'unknown'
-            ? `Found: ${d.result.wms_system} (${d.result.confidence} confidence)`
-            : `News found: ${d.result.title}`
-          setResearchResults(prev => ({ ...prev, [company.id]: msg }))
-        }
-        load()
-      } else {
-        if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Nothing new found' }))
+      if (!silent) {
+        setResearchResults(prev => ({
+          ...prev,
+          [company.id]: d.findings > 0 ? `✓ Found: ${d.results?.[0]?.title || 'new intelligence added'}` : 'Nothing new found publicly'
+        }))
       }
+      if (d.findings > 0) load()
     } catch {
       if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Research failed — try again' }))
     }
     setResearching(prev => ({ ...prev, [company.id]: false }))
-  }
-
-  async function researchCompany(company: any, silent = false) {
-    const mode = company.wms_entries?.some((w: any) => w.wms_system === 'Unknown') ? 'unknown' : 'news'
-    return researchCompanyWithMode(company, mode, silent)
   }
 
   // All news across all companies, sorted newest first
