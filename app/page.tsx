@@ -54,7 +54,7 @@ export default function Home() {
       const res = await fetch('/api/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          system: `You are a WMS Intelligence expert for a supply chain consultancy. You have this live database:\n\n${ctx}\n\nAnswer questions concisely and helpfully about companies, WMS systems, versions, vendors and news.`,
+          system: `You are a WMS (Warehouse Management System) Intelligence expert for a supply chain consultancy. You have a live internal database AND web search capability.\n\nINTERNAL DATABASE:\n${ctx}\n\nSYSTEM KNOWLEDGE:\n- Red Prairie was acquired by JDA, then by Blue Yonder. Red Prairie systems are now Blue Yonder products.\n- Red Prairie Dispatcher = Blue Yonder Dispatcher. Red Prairie Discrete = Blue Yonder WMS (cloud).\n- Manhattan Associates legacy versions (PKMS, WMOS, WMi, Platform) are older on-premise products.\n- Companies marked Unknown/Needs Verification need intelligence — use web search to find their WMS.\n\nBEHAVIOUR:\n1. Check the internal database first and state what we know\n2. Use web search to verify, update or find new information\n3. If a company is Unknown, search for their WMS proactively\n4. Flag conflicts: if web search differs from database say so clearly\n5. Give comprehensive answers: what we have on record + any public confirmation\n6. Be concise and practical — this is a business intelligence tool for consultants`,
           messages: [...messages, { role: 'user', content: msg }]
         })
       })
@@ -186,7 +186,7 @@ export default function Home() {
                 <button onClick={send} disabled={loading||!input.trim()} style={{ padding:'10px 20px',borderRadius:12,background:'linear-gradient(135deg,#3b82f6,#2563eb)',color:'#fff',border:'none',fontSize:14,cursor:'pointer',opacity:loading||!input.trim()?0.4:1 }}>Send</button>
               </div>
               <div style={{ display:'flex',gap:6,flexWrap:'wrap' }}>
-                {['Who uses Manhattan Active?',"What's happening with M&S?",'List all Blue Yonder customers','Compare WMS vendors'].map(q=>(
+                {['Who uses Blue Yonder Dispatcher?', 'What WMS does DHL use?', 'Which companies are Unknown?', 'Who uses Manhattan WMS?'].map(q=>(
                   <button key={q} onClick={()=>setInput(q)} style={{ fontSize:11,color:'rgba(255,255,255,0.4)',background:'transparent',border:'1px solid rgba(255,255,255,0.1)',borderRadius:8,padding:'4px 10px',cursor:'pointer' }}>{q}</button>
                 ))}
               </div>
