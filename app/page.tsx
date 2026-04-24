@@ -74,7 +74,7 @@ export default function Home() {
     fetch('/api/sweep', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count: 10, mode: 'visit' })
+      body: JSON.stringify({ count: 20, mode: 'visit' })
     }).then(r => r.json()).then(d => {
       if (d.findings > 0) setTimeout(load, 1500)
     }).catch(() => {})
@@ -306,7 +306,7 @@ export default function Home() {
                 <div>
                   <span style={{ fontWeight:600, color:C.amber, fontSize:13 }}>🔍 {unknownCount} companies with unknown WMS</span>
                   <span style={{ color:C.textSub, fontSize:12, marginLeft:8 }}>
-                    {researchingCount > 0 ? `Auto-researching ${researchingCount} in background...` : 'Auto-research runs on load for up to 3 at a time'}
+                    {researchingCount > 0 ? `Auto-researching ${researchingCount} in background...` : 'Auto-research runs on load for up to 20 at a time'}
                   </span>
                 </div>
                 <button onClick={() => { setFilterVendor('Unknown'); setSearch('') }}
