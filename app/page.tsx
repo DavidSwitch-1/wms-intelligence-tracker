@@ -37,10 +37,12 @@ export default function Home() {
   const [researching, setResearching] = useState<Record<string,boolean>>({})
   const [researchResults, setResearchResults] = useState<Record<string,string>>({})
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [refreshing, setRefreshing] = useState(false)
   const chatEnd = useRef<HTMLDivElement>(null)
   const refreshTimer = useRef<any>(null)
 
   const load = useCallback(async () => {
+    setRefreshing(true)
     const { data } = await supabase
       .from('companies')
       .select('*, wms_entries(*), news_updates(*)')
@@ -49,6 +51,7 @@ export default function Home() {
       setCompanies(data)
       setLastRefresh(new Date())
     }
+    setRefreshing(false)
   }, [])
 
   useEffect(() => {
@@ -243,7 +246,9 @@ export default function Home() {
         </nav>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:11, color:C.textMuted }}>Updated {lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>
-          <button onClick={load} style={{ fontSize:12, color:C.blue, background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:6, padding:'4px 10px', cursor:'pointer', fontWeight:500 }}>↻ Refresh</button>
+          <button onClick={load} disabled={refreshing} style={{ fontSize:12, color:C.blue, background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:6, padding:'4px 10px', cursor:refreshing?'default':'pointer', fontWeight:500, opacity:refreshing?0.6:1 }}>
+            {refreshing ? '↻ ...' : '↻ Refresh'}
+          </button>
         </div>
       </div>
 
@@ -452,7 +457,11 @@ export default function Home() {
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                 <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>
-                <button onClick={load} style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'7px 14px', fontSize:13, fontWeight:600, cursor:'pointer' }}>↻ Refresh now</button>
+                <button onClick={load} disabled={refreshing}
+                  style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'7px 14px', fontSize:13, fontWeight:600, cursor:refreshing?'default':'pointer', opacity:refreshing?0.6:1, display:'flex', alignItems:'center', gap:6 }}>
+                  <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>↻</span>
+                  {refreshing ? 'Refreshing...' : 'Refresh now'}
+                </button>
               </div>
             </div>
 
@@ -594,6 +603,7 @@ export default function Home() {
 
       <style>{`
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
         input::placeholder{color:#9ca3af}
         textarea::placeholder{color:#9ca3af}
