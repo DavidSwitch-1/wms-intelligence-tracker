@@ -65,24 +65,41 @@ export default function Home() {
     chatEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Background research: find WMS for up to 3 unknown companies on load
+  // On-visit sweep: 10 companies per visit
+  // Mix of unknowns (priority) + known companies that haven't been checked recently
   useEffect(() => {
     if (companies.length === 0) return
-    const unknowns = companies.filter(c =>
-      c.wms_entries?.some((w: any) => w.wms_system === 'Unknown') &&
-      !c.wms_entries?.some((w: any) => w.notes?.includes('Auto-researched'))
-    ).slice(0, 3)
 
-    unknowns.forEach((c, i) => {
-      // Stagger requests to avoid rate limiting
-      setTimeout(() => researchCompany(c, true), i * 4000)
+    // Priority 1: unknowns that haven't been auto-researched
+    const unknowns = companies
+      .filter(c => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown') && !c.last_researched_at)
+      .slice(0, 5)
+
+    // Priority 2: known companies not researched in last 7 days (or never)
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const stale = companies
+      .filter(c => {
+        const hasKnownWMS = c.wms_entries?.some((w: any) => w.wms_system !== 'Unknown')
+        const notRecentlyResearched = !c.last_researched_at || new Date(c.last_researched_at) < sevenDaysAgo
+        const notAlreadyQueued = !unknowns.find(u => u.id === c.id)
+        return hasKnownWMS && notRecentlyResearched && notAlreadyQueued
+      })
+      // Shuffle so different companies get picked each visit
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 5)
+
+    const toResearch = [...unknowns, ...stale]
+
+    toResearch.forEach((c, i) => {
+      const mode = c.wms_entries?.some((w: any) => w.wms_system === 'Unknown') ? 'unknown' : 'news'
+      setTimeout(() => researchCompanyWithMode(c, mode, true), i * 3000)
     })
   }, [companies.length > 0 ? companies[0]?.id : null])
 
-  async function researchCompany(company: any, silent = false) {
+  async function researchCompanyWithMode(company: any, mode: string, silent = false) {
     if (researching[company.id]) return
     setResearching(prev => ({ ...prev, [company.id]: true }))
-    if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Searching...' }))
+    if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: mode === 'unknown' ? '🔍 Searching for WMS...' : '🔍 Checking for news...' }))
 
     try {
       const res = await fetch('/api/research', {
@@ -92,23 +109,31 @@ export default function Home() {
           companyId: company.id,
           companyName: company.name,
           industry: company.industry || '',
-          country: company.country || ''
+          country: company.country || '',
+          mode
         })
       })
       const d = await res.json()
       if (d.updated && d.result) {
         if (!silent) {
-          setResearchResults(prev => ({ ...prev, [company.id]: `Found: ${d.result.wms_system} (${d.result.confidence} confidence)` }))
+          const msg = mode === 'unknown'
+            ? `Found: ${d.result.wms_system} (${d.result.confidence} confidence)`
+            : `News found: ${d.result.title}`
+          setResearchResults(prev => ({ ...prev, [company.id]: msg }))
         }
-        // Reload to show updated data
         load()
       } else {
-        if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'No WMS information found publicly' }))
+        if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Nothing new found' }))
       }
     } catch {
       if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Research failed — try again' }))
     }
     setResearching(prev => ({ ...prev, [company.id]: false }))
+  }
+
+  async function researchCompany(company: any, silent = false) {
+    const mode = company.wms_entries?.some((w: any) => w.wms_system === 'Unknown') ? 'unknown' : 'news'
+    return researchCompanyWithMode(company, mode, silent)
   }
 
   // All news across all companies, sorted newest first
@@ -380,13 +405,11 @@ export default function Home() {
                   <p style={{ margin:'4px 0 0', color:C.textSub, fontSize:14 }}>{[selected.industry, selected.country, selected.region].filter(Boolean).join(' · ')}</p>
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
-                  {selected.wms_entries?.some((w:any) => w.wms_system === 'Unknown') && (
-                    <button onClick={(e) => { e.stopPropagation(); researchCompany(selected) }}
-                      disabled={researching[selected.id]}
-                      style={{ padding:'8px 16px', borderRadius:8, background:researching[selected.id] ? C.amberLight : C.amber, color: researching[selected.id] ? C.amber : '#fff', border:`1px solid ${C.amberBorder}`, fontSize:13, fontWeight:600, cursor:'pointer', opacity: researching[selected.id] ? 0.7 : 1 }}>
-                      {researching[selected.id] ? '🔍 Researching...' : '🔍 Research WMS'}
-                    </button>
-                  )}
+                  <button onClick={(e) => { e.stopPropagation(); researchCompany(selected) }}
+                    disabled={researching[selected.id]}
+                    style={{ padding:'8px 16px', borderRadius:8, background:researching[selected.id] ? C.grayLight : C.surfaceAlt, color: researching[selected.id] ? C.textMuted : C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:500, cursor: researching[selected.id] ? 'default' : 'pointer', opacity: researching[selected.id] ? 0.6 : 1 }}>
+                    {researching[selected.id] ? '🔍 Researching...' : selected.wms_entries?.some((w:any) => w.wms_system === 'Unknown') ? '🔍 Research WMS' : '🔍 Check for news'}
+                  </button>
                   <button onClick={() => { setInput(`Tell me everything about ${selected.name}'s WMS setup, any recent news, and whether our records are current.`); setTab('chat') }}
                     style={{ padding:'8px 18px', borderRadius:8, background:C.blue, color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                     🤖 Ask AI
