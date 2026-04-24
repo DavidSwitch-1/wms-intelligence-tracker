@@ -56,7 +56,7 @@ async function researchOne(company: any) {
 }
 
 export async function POST(req: NextRequest) {
-  const { count = 10, mode = 'visit', targetId = null } = await req.json()
+  const { count = 20, mode = 'visit', targetId = null } = await req.json()
 
   const { data: companies } = await supabase
     .from('companies')
@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
       .map(c => ({
         ...c,
         score: (c.wms_entries?.some((w: any) => w.wms_system === 'Unknown') ? 1000 : 0) +
+        (c.wms_entries?.some((w: any) => w.status === 'Needs Verification') ? 600 : 0) +
                (c.news_updates?.length === 0 ? 500 : 0) +
                Math.random() * 10
       }))
@@ -85,6 +86,13 @@ export async function POST(req: NextRequest) {
   const results = []
   for (const company of scored) {
     const result = await researchOne(company)
+
+    // Stamp freshness on every pass so UI can show last-researched
+    await supabase
+      .from('companies')
+      .update({ last_researched_at: new Date().toISOString() })
+      .eq('id', company.id)
+
     if (!result || !result.found) continue
 
     const isUnknown = company.wms_entries?.some((w: any) => w.wms_system === 'Unknown')
