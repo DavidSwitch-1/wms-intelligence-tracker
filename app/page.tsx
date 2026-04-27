@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -199,6 +199,13 @@ export default function Home() {
   const [briefText, setBriefText] = useState('')
   const [briefError, setBriefError] = useState('')
   const [briefCopied, setBriefCopied] = useState(false)
+  const [linkedinModalOpen, setLinkedinModalOpen] = useState(false)
+  const [linkedinNewsId, setLinkedinNewsId] = useState<string | null>(null)
+  const [linkedinNewsTitle, setLinkedinNewsTitle] = useState('')
+  const [linkedinPosts, setLinkedinPosts] = useState<{insightful?:string; conversational?:string; contrarian?:string}>({})
+  const [linkedinLoading, setLinkedinLoading] = useState(false)
+  const [linkedinError, setLinkedinError] = useState('')
+  const [copiedVariant, setCopiedVariant] = useState<string>('')
   const chatEnd = useRef<HTMLDivElement>(null)
   const refreshTimer = useRef<any>(null)
 
@@ -290,6 +297,36 @@ export default function Home() {
       await navigator.clipboard.writeText(briefText)
       setBriefCopied(true)
       setTimeout(() => setBriefCopied(false), 2000)
+    } catch {}
+  }
+
+    async function generateLinkedInPosts(news: any) {
+    if (!news || linkedinLoading) return
+    setLinkedinNewsId(news.id)
+    setLinkedinNewsTitle(news.title || '')
+    setLinkedinModalOpen(true)
+    setLinkedinLoading(true)
+    setLinkedinPosts({})
+    setLinkedinError('')
+    setCopiedVariant('')
+    try {
+      const res = await fetch('/api/linkedin/' + news.id, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      const data = await res.json()
+      if (data.error) setLinkedinError(data.error)
+      else setLinkedinPosts(data.posts || {})
+    } catch {
+      setLinkedinError('Request failed')
+    }
+    setLinkedinLoading(false)
+  }
+
+  async function copyLinkedInVariant(variant: 'insightful'|'conversational'|'contrarian') {
+    try {
+      const text = (linkedinPosts as any)[variant] || ''
+      if (!text) return
+      await navigator.clipboard.writeText(text)
+      setCopiedVariant(variant)
+      setTimeout(() => setCopiedVariant(''), 2000)
     } catch {}
   }
 
@@ -620,6 +657,10 @@ export default function Home() {
                       <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:2 }}>{n.title}</div>
                       <div style={{ fontSize:11, color:C.textMuted }}><span style={{ color:C.blue, fontWeight:500 }}>{n._company.name}</span> · {timeAgo(n.published_at || n.created_at)}</div>
                     </div>
+                    <button onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading} title="Draft LinkedIn post"
+                      style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, padding:4, cursor:'pointer', display:'inline-flex', alignItems:'center', color:C.blue, marginRight:6 }}>
+                      <Linkedin size={12} />
+                    </button>
                     {signalBadge(n.signal_type)}
                   </div>
                 ))}
@@ -887,7 +928,11 @@ export default function Home() {
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                         <span style={{ fontSize:12, color:C.blue, fontWeight:500 }}>{n.companyName}</span>
                         {company?.last_researched_at && <span style={{ fontSize:11, color:C.textMuted, marginLeft:6 }}>· last researched {timeAgo(company.last_researched_at)}</span>}
-                        <button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'verified' ? 'pending' : 'verified') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'verified' ? C.greenLight : 'transparent', color: n.status === 'verified' ? C.green : C.textSub, border: `1px solid ${n.status === 'verified' ? C.greenBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>✓ {n.status === 'verified' ? 'Verified' : 'Verify'}</button><button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'dismissed' ? 'pending' : 'dismissed') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'dismissed' ? C.redLight : 'transparent', color: n.status === 'dismissed' ? C.red : C.textSub, border: `1px solid ${n.status === 'dismissed' ? C.redBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>✕ {n.status === 'dismissed' ? 'Dismissed' : 'Dismiss'}</button>{n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none' }}>Source ↗</a>}
+                        <button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'verified' ? 'pending' : 'verified') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'verified' ? C.greenLight : 'transparent', color: n.status === 'verified' ? C.green : C.textSub, border: `1px solid ${n.status === 'verified' ? C.greenBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>✓ {n.status === 'verified' ? 'Verified' : 'Verify'}</button><button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'dismissed' ? 'pending' : 'dismissed') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'dismissed' ? C.redLight : 'transparent', color: n.status === 'dismissed' ? C.red : C.textSub, border: `1px solid ${n.status === 'dismissed' ? C.redBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>✕ {n.status === 'dismissed' ? 'Dismissed' : 'Dismiss'}</button><button onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading}
+                          style={{ background:'transparent', color:C.blue, border:`1px solid ${C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor:'pointer', fontWeight:500, marginRight:6, display:'inline-flex', alignItems:'center', gap:4 }}>
+                          <Linkedin size={11} />Draft LinkedIn post
+                        </button>
+                        {n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none' }}>Source ↗</a>}
                       </div>
                     </div>
                   )
@@ -1102,6 +1147,73 @@ export default function Home() {
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: briefCopied ? '#7CC8C4' : '#0B1C37', color: briefCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!briefText || briefLoading) ? 'not-allowed' : 'pointer', opacity: (!briefText || briefLoading) ? 0.5 : 1 }}>
                 <Copy size={14} />
                 {briefCopied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── LINKEDIN POST DRAFTS MODAL ── */}
+      {linkedinModalOpen && (
+        <div onClick={() => !linkedinLoading && setLinkedinModalOpen(false)}
+          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background:C.surface, borderRadius:16, maxWidth:780, width:'100%', maxHeight:'88vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <Linkedin size={18} color="#FECC01" />
+                <div>
+                  <div style={{ fontWeight:700, fontSize:15 }}>LinkedIn post drafts</div>
+                  <div style={{ fontSize:12, color:'#7CC8C4', marginTop:2 }}>{linkedinNewsTitle}</div>
+                </div>
+              </div>
+              <button onClick={() => setLinkedinModalOpen(false)} disabled={linkedinLoading}
+                style={{ background:'transparent', border:'none', color:'#fff', cursor: linkedinLoading ? 'wait' : 'pointer', padding:6, borderRadius:6, display:'flex', alignItems:'center' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.6, color:C.text, display:'flex', flexDirection:'column', gap:18 }}>
+              {linkedinLoading && (
+                <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
+                  <RefreshCw size={16} className="spin" />
+                  Drafting three posts… this takes ~10–20 seconds.
+                </div>
+              )}
+              {linkedinError && (
+                <div style={{ background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', padding:'12px 14px', borderRadius:8, fontSize:13 }}>
+                  {linkedinError}
+                </div>
+              )}
+              {!linkedinLoading && !linkedinError && (['insightful','conversational','contrarian'] as const).map(v => {
+                const text = (linkedinPosts as any)[v] || ''
+                if (!text) return null
+                const labels: Record<string,string> = { insightful:'INSIGHTFUL', conversational:'CONVERSATIONAL', contrarian:'CONTRARIAN' }
+                const captions: Record<string,string> = { insightful:'Sharp industry observation', conversational:'Story-led, invites comments', contrarian:'Challenges a prevailing assumption' }
+                return (
+                  <div key={v} style={{ background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:12, overflow:'hidden' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background:'#0B1C37', color:'#fff' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <span style={{ fontSize:11, fontWeight:700, letterSpacing:'0.06em', color:'#FECC01' }}>{labels[v]}</span>
+                        <span style={{ fontSize:11, color:'#7CC8C4' }}>· {captions[v]}</span>
+                      </div>
+                      <button onClick={() => copyLinkedInVariant(v)}
+                        style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px', borderRadius:6, background: copiedVariant === v ? '#7CC8C4' : '#FECC01', color:'#0B1C37', border:'none', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                        <Copy size={12} />
+                        {copiedVariant === v ? 'Copied!' : 'Copy'}
+                      </button>
+                    </div>
+                    <div style={{ padding:'14px 16px', whiteSpace:'pre-wrap', fontFamily:'inherit', fontSize:13, lineHeight:1.7, color:C.text }}>
+                      {text}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
+              <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search</div>
+              <button onClick={() => setLinkedinModalOpen(false)}
+                style={{ padding:'8px 16px', borderRadius:8, background:'transparent', color:C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                Close
               </button>
             </div>
           </div>
