@@ -178,7 +178,8 @@ export default function Home() {
   const [saved, setSaved]     = useState(false)
   const [researching, setResearching] = useState<Record<string,boolean>>({})
   const [researchResults, setResearchResults] = useState<Record<string,string>>({})
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null)
+  const [mounted, setMounted] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [showDismissed, setShowDismissed] = useState(false)
   const [newsBusy, setNewsBusy] = useState<Record<string, boolean>>({})
@@ -223,6 +224,14 @@ export default function Home() {
   const [briefCachedAt, setBriefCachedAt] = useState<string|null>(null)
   const [linkedinCached, setLinkedinCached] = useState(false)
   const [linkedinCachedAt, setLinkedinCachedAt] = useState<string|null>(null)
+
+  // SSR/hydration safety: never render Date.now() / new Date() during SSR.
+  // Flip mounted=true on the client so cron-health and 'updated' chips only render
+  // after hydration, avoiding React #418/#423/#425.
+  useEffect(() => {
+    setMounted(true)
+    setLastRefresh(new Date())
+  }, [])
 
   const load = useCallback(async () => {
     setRefreshing(true)
@@ -658,7 +667,7 @@ export default function Home() {
           ))}
         </nav>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ fontSize:11, color:C.textMuted }}>Updated {lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>
+          <span style={{ fontSize:11, color:C.textMuted }}>Updated {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '—'}</span>
           <button onClick={load} disabled={refreshing} style={{ fontSize:12, color:C.blue, background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:6, padding:'4px 10px', cursor:refreshing?'default':'pointer', fontWeight:500, opacity:refreshing?0.6:1 }}>
             {refreshing ? '↻ ...' : '↻ Refresh'}
           </button>
@@ -697,7 +706,7 @@ export default function Home() {
           const sortedNews = [...allNewsItems].sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
           return (
             <div>
-              {cronHealth && (() => {
+              {mounted && cronHealth && (() => {
                 const lastIso = cronHealth.last_sweep_at
                 const ageHrs = lastIso ? (Date.now() - new Date(lastIso).getTime()) / 3600000 : 999
                 const dotColor = ageHrs < 6 ? C.green : ageHrs < 24 ? C.amber : C.red
@@ -1039,7 +1048,7 @@ export default function Home() {
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                 <label style={{ fontSize:12, color:C.textSub, display:'flex', alignItems:'center', gap:6, cursor:'pointer', marginRight:8 }}><input type="checkbox" checked={showDismissed} onChange={e => setShowDismissed(e.target.checked)} style={{ margin:0 }} />Show dismissed</label>
-                <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>
+                <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '—'}</span>
                 <button onClick={load} disabled={refreshing}
                   style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'7px 14px', fontSize:13, fontWeight:600, cursor:refreshing?'default':'pointer', opacity:refreshing?0.6:1, display:'flex', alignItems:'center', gap:6 }}>
                   <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>↻</span>
