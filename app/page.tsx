@@ -222,6 +222,9 @@ export default function Home() {
   const keySeqRef = useRef<{val:string, ts:number}>({val:'', ts:0})
   const [briefCached, setBriefCached] = useState(false)
   const [briefCachedAt, setBriefCachedAt] = useState<string|null>(null)
+  // Timeline panel: per-company chronological feed of news_updates.
+  const [timelineExpanded, setTimelineExpanded] = useState(false)
+  const [expandedTimelineEntries, setExpandedTimelineEntries] = useState<Record<string, boolean>>({})
   const [linkedinCached, setLinkedinCached] = useState(false)
   const [linkedinCachedAt, setLinkedinCachedAt] = useState<string|null>(null)
 
@@ -1027,6 +1030,59 @@ export default function Home() {
                   ))}
                 </div>
               )}
+
+              {/* Timeline — vertical chronological feed of all news_updates */}
+              {(() => {
+                const tl = (selected.news_updates || [])
+                  .slice()
+                  .sort((a:any,b:any) => new Date(b.published_at||b.created_at).getTime() - new Date(a.published_at||a.created_at).getTime())
+                if (tl.length === 0) return null
+                const cap = timelineExpanded ? tl.length : Math.min(25, tl.length)
+                const shown = tl.slice(0, cap)
+                return (
+                  <div style={{ marginBottom:24 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:C.textSub, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12 }}>Timeline</div>
+                    <div style={{ position:'relative', paddingLeft:18 }}>
+                      <div style={{ position:'absolute', left:5, top:6, bottom:6, width:2, background:C.border }} />
+                      {shown.map((n: any) => {
+                        const isOpen = !!expandedTimelineEntries[n.id]
+                        const dRaw = n.published_at || n.created_at
+                        const dateStr = dRaw ? new Date(dRaw).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : 'undated'
+                        const lvlBg = n.impact_level === 'High' ? C.redLight : n.impact_level === 'Info' ? C.greenLight : C.amberLight
+                        const lvlFg = n.impact_level === 'High' ? C.red    : n.impact_level === 'Info' ? C.green     : C.amber
+                        const lvlBd = n.impact_level === 'High' ? C.redBorder : n.impact_level === 'Info' ? C.greenBorder : C.amberBorder
+                        return (
+                          <div key={n.id} style={{ position:'relative', paddingBottom:14, paddingLeft:14 }}>
+                            <div style={{ position:'absolute', left:-4, top:6, width:12, height:12, borderRadius:'50%', background:lvlFg, border:`2px solid ${C.surface}`, boxShadow:`0 0 0 1px ${lvlBd}` }} />
+                            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, flexWrap:'wrap' }}>
+                              <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:C.surfaceAlt, border:`1px solid ${C.border}`, color:C.textSub, fontWeight:500 }}>{dateStr}</span>
+                              <span style={{ fontSize:11, padding:'2px 8px', borderRadius:20, background:lvlBg, color:lvlFg, border:`1px solid ${lvlBd}`, fontWeight:600 }}>{n.impact_level || 'Info'}</span>
+                              {signalBadge(n.signal_type)}
+                            </div>
+                            <div onClick={() => setExpandedTimelineEntries(p => ({ ...p, [n.id]: !p[n.id] }))} style={{ cursor:'pointer' }}>
+                              <div style={{ fontWeight:600, fontSize:14, color:C.text, marginBottom:3 }}>{n.title || 'Untitled'}</div>
+                              {n.summary && (
+                                <div style={{ fontSize:13, color:C.textSub, lineHeight:1.5, display:'-webkit-box', WebkitLineClamp: isOpen ? ('unset' as any) : 2, WebkitBoxOrient:'vertical', overflow: isOpen ? 'visible' : 'hidden' }}>{n.summary}</div>
+                              )}
+                              {isOpen && n.proposed_wms_system && (
+                                <div style={{ fontSize:12, marginTop:6, color:C.amber }}>Proposed change: {n.proposed_wms_system}</div>
+                              )}
+                              {isOpen && n.source && (
+                                <div style={{ fontSize:12, marginTop:6 }}><a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" style={{ color:C.blue, textDecoration:'none' }} onClick={e => e.stopPropagation()}>Source ↗</a></div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {tl.length > 25 && (
+                      <button onClick={() => setTimelineExpanded(v => !v)} style={{ marginTop:8, background:'transparent', color:C.blue, border:`1px solid ${C.border}`, borderRadius:6, padding:'4px 12px', fontSize:12, cursor:'pointer', fontWeight:500 }}>
+                        {timelineExpanded ? 'Show first 25' : `Show all (${tl.length})`}
+                      </button>
+                    )}
+                  </div>
+                )
+              })()}
 
               {selected.notes && (
                 <div>
