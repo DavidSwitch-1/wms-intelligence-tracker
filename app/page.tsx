@@ -110,12 +110,12 @@ function timeAgo(iso: string | null | undefined): string | null {
 function signalBadge(t: string | null | undefined) {
   if (!t || t === 'none') return null
   const map: Record<string, { label: string; bg: string; fg: string; bd: string }> = {
-    hiring:        { label: '👤 Hiring',     bg: '#f5f3ff', fg: '#7c3aed', bd: '#ddd6fe' },
-    exec_hire:     { label: '💼 Exec hire',  bg: '#f5f3ff', fg: '#7c3aed', bd: '#ddd6fe' },
-    dc_opening:    { label: '🏗️ New DC',     bg: '#ecfeff', fg: '#0891b2', bd: '#a5f3fc' },
-    wms_migration: { label: '🔄 WMS change', bg: '#eff6ff', fg: '#2563eb', bd: '#bfdbfe' },
-    ma:            { label: '🤝 M&A',        bg: '#fffbeb', fg: '#d97706', bd: '#fde68a' },
-    growth:        { label: '📈 Growth',     bg: '#ecfdf5', fg: '#059669', bd: '#a7f3d0' },
+    hiring:        { label: 'Hiring',     bg: '#f5f3ff', fg: '#7c3aed', bd: '#ddd6fe' },
+    exec_hire:     { label: 'Exec hire',  bg: '#f5f3ff', fg: '#7c3aed', bd: '#ddd6fe' },
+    dc_opening:    { label: 'New DC',     bg: '#ecfeff', fg: '#0891b2', bd: '#a5f3fc' },
+    wms_migration: { label: 'WMS change', bg: '#eff6ff', fg: '#2563eb', bd: '#bfdbfe' },
+    ma:            { label: 'M&A',        bg: '#fffbeb', fg: '#d97706', bd: '#fde68a' },
+    growth:        { label: 'Growth',     bg: '#ecfdf5', fg: '#059669', bd: '#a7f3d0' },
   }
   const m = map[t]
   if (!m) return null
@@ -244,6 +244,19 @@ export default function Home() {
     chatEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Saved views: load from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('wms.savedViews')
+      if (raw) setSavedViews(JSON.parse(raw))
+    } catch {}
+  }, [])
+
+  // Saved views: persist to localStorage on change
+  useEffect(() => {
+    try { localStorage.setItem('wms.savedViews', JSON.stringify(savedViews)) } catch {}
+  }, [savedViews])
+
   // Global keyboard shortcuts
   useEffect(() => {
     let helpTimer: any = null
@@ -291,19 +304,6 @@ export default function Home() {
     return () => { document.removeEventListener('keydown', onKey); if (helpTimer) clearTimeout(helpTimer) }
   }, [showBrief, linkedinModalOpen, lookalikeOpen, shortcutsOpen, selected])
 
-  // Saved views: load from localStorage on mount
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('wms.savedViews')
-      if (raw) setSavedViews(JSON.parse(raw))
-    } catch {}
-  }, [])
-
-  // Saved views: persist to localStorage on change
-  useEffect(() => {
-    try { localStorage.setItem('wms.savedViews', JSON.stringify(savedViews)) } catch {}
-  }, [savedViews])
-
   // Cron health: fetch on mount + every 60s
   useEffect(() => {
     let mounted = true
@@ -334,7 +334,7 @@ export default function Home() {
   async function researchCompany(company: any, silent = false) {
     if (researching[company.id]) return
     setResearching(prev => ({ ...prev, [company.id]: true }))
-    if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: '🔍 Searching...' }))
+    if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Searching...' }))
     try {
       const res = await fetch('/api/sweep', {
         method: 'POST',
@@ -345,7 +345,7 @@ export default function Home() {
       if (!silent) {
         setResearchResults(prev => ({
           ...prev,
-          [company.id]: d.findings > 0 ? `✓ Found: ${d.results?.[0]?.title || 'new intelligence added'}` : 'Nothing new found publicly'
+          [company.id]: d.findings > 0 ? `Found: ${d.results?.[0]?.title || 'new intelligence added'}` : 'Nothing new found publicly'
         }))
       }
       if (d.findings > 0) load()
@@ -616,29 +616,29 @@ export default function Home() {
       {/* ── Header ── */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'0 28px', display:'flex', alignItems:'center', justifyContent:'space-between', height:56, position:'sticky', top:0, zIndex:50, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}>📦</div>
+          <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}></div>
           <div>
             <div style={{ fontWeight:700, fontSize:14, color:C.text }}>WMS Intelligence</div>
             <div style={{ color:C.textMuted, fontSize:11 }}>
               {companies.length} companies
-              {researchingCount > 0 && <span style={{ color:C.blue, marginLeft:6 }}>· 🔍 Researching {researchingCount}...</span>}
+              {researchingCount > 0 && <span style={{ color:C.blue, marginLeft:6 }}> · Researching {researchingCount}...</span>}
             </div>
           </div>
         </div>
         <nav style={{ display:'flex', gap:2 }}>
           {([
-            ['dashboard','⚡ Dashboard'],
-            ['db','🗃 Database'],
-            ['chat','🤖 AI Assistant'],
-            ['news',`📰 News${allNews.length > 0 ? ` (${allNews.length})` : ''}`],
-            ['add','➕ Add Entry'],
-          ] as [typeof tab, string][]).map(([t, label]) => (
+            ['dashboard','Dashboard', LayoutDashboard],
+            ['db','Database', DatabaseIcon],
+            ['chat','AI Assistant', Bot],
+            ['news',`News${allNews.length > 0 ? ` (${allNews.length})` : ''}`, Newspaper],
+            ['add','Add Entry', Plus],
+          ] as [typeof tab, string, any][]).map(([t, label, Icon]) => (
             <button key={t} onClick={() => { setTab(t); setSelected(null) }}
               style={{ padding:'7px 16px', borderRadius:8, fontSize:13, cursor:'pointer', border:'none',
                 background: tab===t ? C.blueLight : 'transparent',
                 color: tab===t ? C.blue : C.textSub,
                 fontWeight: tab===t ? 600 : 400 }}>
-              {label}
+              <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><Icon size={14} />{label}</span>
             </button>
           ))}
         </nav>
@@ -840,7 +840,7 @@ export default function Home() {
             {/* Search + filter */}
             <div style={{ display:'flex', gap:10, marginBottom: filterVendor !== 'All' || search ? 10 : 16 }}>
               <div style={{ flex:1, position:'relative' }}>
-                <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.textMuted }}>🔍</span>
+                <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.textMuted }}></span>
                 <input value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Search companies or WMS systems..."
                   style={{ width:'100%', background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 14px 10px 38px', color:C.text, fontSize:14, outline:'none', boxSizing:'border-box', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }} />
@@ -853,15 +853,14 @@ export default function Home() {
               {(filterVendor !== 'All' || search) && (
                 <button onClick={() => { setFilterVendor('All'); setSearch('') }}
                   style={{ padding:'10px 14px', borderRadius:10, border:`1px solid ${C.border}`, background:C.surface, color:C.textSub, fontSize:13, cursor:'pointer' }}>
-                  Clear ✕
-                </button>
+                  Clear</button>
               )}
             </div>
 
             {(filterVendor !== 'All' || search) && (
               <div style={{ background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'8px 16px', marginBottom:14, fontSize:13, color:C.blue, display:'flex', justifyContent:'space-between' }}>
                 <span>{filterVendor !== 'All' ? `Vendor: ${filterVendor}` : `Search: "${search}"`} — {filtered.length} companies</span>
-                <button onClick={() => { setFilterVendor('All'); setSearch('') }} style={{ background:'none', border:'none', color:C.blue, cursor:'pointer', fontSize:13, fontWeight:600 }}>Clear ✕</button>
+                <button onClick={() => { setFilterVendor('All'); setSearch('') }} style={{ background:'none', border:'none', color:C.blue, cursor:'pointer', fontSize:13, fontWeight:600 }}>Clear</button>
               </div>
             )}
 
@@ -869,7 +868,7 @@ export default function Home() {
             {unknownCount > 0 && (
               <div style={{ background:C.amberLight, border:`1px solid ${C.amberBorder}`, borderRadius:10, padding:'12px 16px', marginBottom:14, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                 <div>
-                  <span style={{ fontWeight:600, color:C.amber, fontSize:13 }}>🔍 {unknownCount} companies with unknown WMS</span>
+                  <span style={{ fontWeight:600, color:C.amber, fontSize:13 }}>{unknownCount} companies with unknown WMS</span>
                   <span style={{ color:C.textSub, fontSize:12, marginLeft:8 }}>
                     {researchingCount > 0 ? `Auto-researching ${researchingCount} in background...` : 'Auto-research runs on load for up to 20 at a time'}
                   </span>
@@ -898,30 +897,28 @@ export default function Home() {
                         <div style={{ color:C.textMuted, fontSize:12, marginTop:1 }}>{[c.industry, c.country].filter(Boolean).join(' · ')}</div>
                       </div>
                       <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                        {c.news_updates?.length > 0 && <span style={{ background:C.redLight, color:C.red, border:`1px solid ${C.redBorder}`, borderRadius:20, padding:'2px 9px', fontSize:11, fontWeight:500 }}>📰 {c.news_updates.length}</span>}
-                        {isResearching && <span style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:20, padding:'2px 9px', fontSize:11 }}>🔍 Researching</span>}
+                        {c.news_updates?.length > 0 && <span style={{ background:C.redLight, color:C.red, border:`1px solid ${C.redBorder}`, borderRadius:20, padding:'2px 9px', fontSize:11, fontWeight:500 }}>{c.news_updates.length}</span>}
+                        {isResearching && <span style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:20, padding:'2px 9px', fontSize:11 }}>Researching</span>}
                         <span style={{ color:C.textMuted, fontSize:13 }}>›</span>
                       </div>
                     </div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                       {c.wms_entries?.map((w: any) => (
                         <span key={w.id} style={{ background:vendorBg(w.vendor), color:vendorColor(w.vendor), border:`1px solid ${vendorBorder(w.vendor)}`, borderRadius:6, padding:'3px 10px', fontSize:12, fontWeight:500 }}>
-                          {w.wms_system === 'Unknown' ? '❓ Unknown' : w.wms_system}
+                          {w.wms_system === 'Unknown' ? 'Unknown' : w.wms_system}
                           {w.version && w.version !== w.wms_system && <span style={{ opacity:0.65, fontSize:11 }}> · {w.version.length > 30 ? w.version.substring(0,30)+'…' : w.version}</span>}
                         </span>
                       ))}
                     </div>
                     {researchResult && (
-                      <div style={{ marginTop:8, fontSize:12, color:C.blue, background:C.blueLight, borderRadius:6, padding:'4px 10px' }}>
-                        🔍 {researchResult}
+                      <div style={{ marginTop:8, fontSize:12, color:C.blue, background:C.blueLight, borderRadius:6, padding:'4px 10px' }}>{researchResult}
                       </div>
                     )}
                   </div>
                 )
               })}
               {filtered.length === 0 && (
-                <div style={{ textAlign:'center', padding:60, color:C.textMuted, background:C.surface, borderRadius:12, border:`1px solid ${C.border}` }}>
-                  🔍 No companies match your search
+                <div style={{ textAlign:'center', padding:60, color:C.textMuted, background:C.surface, borderRadius:12, border:`1px solid ${C.border}` }}>No companies match your search
                 </div>
               )}
             </div>
@@ -945,11 +942,10 @@ export default function Home() {
                   <button onClick={(e) => { e.stopPropagation(); researchCompany(selected) }}
                     disabled={researching[selected.id]}
                     style={{ padding:'8px 16px', borderRadius:8, background:researching[selected.id] ? C.grayLight : C.surfaceAlt, color: researching[selected.id] ? C.textMuted : C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:500, cursor: researching[selected.id] ? 'default' : 'pointer', opacity: researching[selected.id] ? 0.6 : 1 }}>
-                    {researching[selected.id] ? '🔍 Researching...' : selected.wms_entries?.some((w:any) => w.wms_system === 'Unknown') ? '🔍 Research WMS' : '🔍 Check for news'}
+                    {researching[selected.id] ? 'Researching...' : selected.wms_entries?.some((w:any) => w.wms_system === 'Unknown') ? 'Research WMS' : 'Check for news'}
                   </button>
                   <button onClick={() => { setInput(`Tell me everything about ${selected.name}'s WMS setup, any recent news, and whether our records are current.`); setTab('chat') }}
-                    style={{ padding:'8px 18px', borderRadius:8, background:C.blue, color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                    🤖 Ask AI
+                    style={{ padding:'8px 18px', borderRadius:8, background:C.blue, color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>Ask AI
                   </button>
                   <button onClick={() => generateBrief(selected)}
                     disabled={briefLoading}
@@ -968,8 +964,7 @@ export default function Home() {
 
               {/* Research result */}
               {researchResults[selected.id] && (
-                <div style={{ background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:10, padding:'10px 16px', marginBottom:20, fontSize:13, color:C.blue, fontWeight:500 }}>
-                  🔍 Research: {researchResults[selected.id]}
+                <div style={{ background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:10, padding:'10px 16px', marginBottom:20, fontSize:13, color:C.blue, fontWeight:500 }}>Research: {researchResults[selected.id]}
                 </div>
               )}
 
@@ -1040,7 +1035,7 @@ export default function Home() {
 
             {allNews.length === 0 ? (
               <div style={{ textAlign:'center', padding:60, color:C.textMuted, background:C.surface, borderRadius:12, border:`1px solid ${C.border}` }}>
-                <div style={{ fontSize:32, marginBottom:12 }}>📰</div>
+                <div style={{ fontSize:32, marginBottom:12 }}></div>
                 <div style={{ fontWeight:600, marginBottom:6 }}>No news yet</div>
                 <div style={{ fontSize:13 }}>News and research findings will appear here automatically as the AI discovers new information.</div>
               </div>
@@ -1070,7 +1065,7 @@ export default function Home() {
                       </div>
                       {n.proposed_wms_system && n.status !== 'verified' && (
                         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', marginBottom:8, background:C.amberLight, border:`1px solid ${C.amberBorder}`, borderRadius:8, flexWrap:'wrap' }}>
-                          <span style={{ fontSize:12, color:C.amber, fontWeight:600 }}>🔄 Proposed change:</span>
+                          <span style={{ fontSize:12, color:C.amber, fontWeight:600 }}>Proposed change:</span>
                           <span style={{ fontSize:12, color:C.textSub }}>{(company?.wms_entries?.[0]?.wms_system) || 'Unknown'} → <span style={{ color:C.amber, fontWeight:600 }}>{n.proposed_wms_system}</span></span>
                           <button onClick={(e) => { e.stopPropagation(); applyChange(n.id) }} disabled={newsBusy[n.id]} style={{ marginLeft:'auto', background:C.amber, color:'#fff', border:'none', borderRadius:6, padding:'4px 12px', fontSize:11, fontWeight:600, cursor: newsBusy[n.id] ? 'default' : 'pointer', opacity: newsBusy[n.id] ? 0.5 : 1 }}>Apply change</button>
                         </div>
@@ -1080,7 +1075,7 @@ export default function Home() {
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                         <span style={{ fontSize:12, color:C.blue, fontWeight:500 }}>{n.companyName}</span>
                         {company?.last_researched_at && <span style={{ fontSize:11, color:C.textMuted, marginLeft:6 }}>· last researched {timeAgo(company.last_researched_at)}</span>}
-                        <button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'verified' ? 'pending' : 'verified') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'verified' ? C.greenLight : 'transparent', color: n.status === 'verified' ? C.green : C.textSub, border: `1px solid ${n.status === 'verified' ? C.greenBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>✓ {n.status === 'verified' ? 'Verified' : 'Verify'}</button><button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'dismissed' ? 'pending' : 'dismissed') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'dismissed' ? C.redLight : 'transparent', color: n.status === 'dismissed' ? C.red : C.textSub, border: `1px solid ${n.status === 'dismissed' ? C.redBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>✕ {n.status === 'dismissed' ? 'Dismissed' : 'Dismiss'}</button><button onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading}
+                        <button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'verified' ? 'pending' : 'verified') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'verified' ? C.greenLight : 'transparent', color: n.status === 'verified' ? C.green : C.textSub, border: `1px solid ${n.status === 'verified' ? C.greenBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>{n.status === 'verified' ? 'Verified' : 'Verify'}</button><button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'dismissed' ? 'pending' : 'dismissed') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'dismissed' ? C.redLight : 'transparent', color: n.status === 'dismissed' ? C.red : C.textSub, border: `1px solid ${n.status === 'dismissed' ? C.redBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>{n.status === 'dismissed' ? 'Dismissed' : 'Dismiss'}</button><button onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading}
                           style={{ background:'transparent', color:C.blue, border:`1px solid ${C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor:'pointer', fontWeight:500, marginRight:6, display:'inline-flex', alignItems:'center', gap:4 }}>
                           <Linkedin size={11} />Draft LinkedIn post
                         </button>
@@ -1104,7 +1099,7 @@ export default function Home() {
             <div style={{ flex:1, overflowY:'auto', padding:20, display:'flex', flexDirection:'column', gap:14 }}>
               {messages.map((m, i) => (
                 <div key={i} style={{ display:'flex', justifyContent:m.role==='user'?'flex-end':'flex-start', gap:10 }}>
-                  {m.role==='assistant' && <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, marginTop:2 }}>🤖</div>}
+                  {m.role==='assistant' && <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, marginTop:2 }}></div>}
                   <div style={{ maxWidth:'72%', borderRadius:14, padding:'10px 16px', fontSize:14, lineHeight:1.65, whiteSpace:'pre-wrap',
                     background: m.role==='user' ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : C.surfaceAlt,
                     color: m.role==='user' ? '#fff' : C.text,
@@ -1115,7 +1110,7 @@ export default function Home() {
               ))}
               {loading && (
                 <div style={{ display:'flex', gap:10 }}>
-                  <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}>🤖</div>
+                  <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}></div>
                   <div style={{ background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 16px', display:'flex', gap:6, alignItems:'center' }}>
                     {[0,1,2].map(i => <div key={i} style={{ width:7, height:7, borderRadius:'50%', background:C.blue, animation:`blink 1.2s ${i*0.2}s infinite` }}></div>)}
                   </div>
@@ -1181,7 +1176,7 @@ export default function Home() {
                 style={{ width:'100%', padding:'12px', borderRadius:10, background:C.blue, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer', opacity:saving||!form.name||!form.wms_system?0.5:1 }}>
                 {saving?'Saving...':'Add to Database'}
               </button>
-              {saved && <div style={{ marginTop:12, background:C.greenLight, color:C.green, border:`1px solid ${C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>✓ Added successfully!</div>}
+              {saved && <div style={{ marginTop:12, background:C.greenLight, color:C.green, border:`1px solid ${C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>Added successfully!</div>}
             </div>
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
               <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>Bulk Add Companies</h2>
@@ -1200,12 +1195,12 @@ export default function Home() {
               <button onClick={bulkImport} disabled={bulkBusy || !bulkText.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: bulkBusy || !bulkText.trim() ? 'default' : 'pointer', opacity: bulkBusy || !bulkText.trim() ? 0.5 : 1 }}>{bulkBusy ? 'Importing...' : `Import ${bulkText.split('\n').map(s => s.trim()).filter(Boolean).length} companies`}</button>
               {bulkResult && (
                 <div style={{ marginTop:12, background: bulkResult.error ? C.redLight : C.greenLight, color: bulkResult.error ? C.red : C.green, border: `1px solid ${bulkResult.error ? C.redBorder : C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>
-                  {bulkResult.error ? `❌ ${bulkResult.error}` : `✓ ${bulkResult.added ?? 0} added · ${bulkResult.skipped ?? 0} skipped (duplicates)`}
+                  {bulkResult.error ? `${bulkResult.error}` : `${bulkResult.added ?? 0} added · ${bulkResult.skipped ?? 0} skipped (duplicates)`}
                 </div>
               )}
             </div>
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
-              <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>🔍 Discover New Companies</h2>
+              <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>Discover New Companies</h2>
               <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Tell Claude what kind of company you're prospecting and it'll search the web for fresh, unduplicated targets — with hiring-signal flags.</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
                 <div>
@@ -1217,7 +1212,7 @@ export default function Home() {
                   <input value={suggestCountry} onChange={e => setSuggestCountry(e.target.value)} placeholder="e.g. United Kingdom" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                 </div>
               </div>
-              <button onClick={getSuggestions} disabled={suggestBusy || !suggestIndustry.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: suggestBusy || !suggestIndustry.trim() ? 'default' : 'pointer', opacity: suggestBusy || !suggestIndustry.trim() ? 0.5 : 1 }}>{suggestBusy ? '🔍 Searching the web...' : '🔍 Get Claude\'s suggestions'}</button>
+              <button onClick={getSuggestions} disabled={suggestBusy || !suggestIndustry.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: suggestBusy || !suggestIndustry.trim() ? 'default' : 'pointer', opacity: suggestBusy || !suggestIndustry.trim() ? 0.5 : 1 }}>{suggestBusy ? 'Searching the web...' : 'Get Claude\'s suggestions'}</button>
               {suggestError && <div style={{ marginTop:12, background:C.redLight, color:C.red, border:`1px solid ${C.redBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13 }}>{suggestError}</div>}
               {suggestions.length > 0 && (
                 <div style={{ marginTop:18, display:'flex', flexDirection:'column', gap:10 }}>
