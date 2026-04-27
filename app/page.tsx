@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -193,6 +193,12 @@ export default function Home() {
   const [suggestions, setSuggestions] = useState<any[]>([])
   const [suggestError, setSuggestError] = useState('')
   const [addingSuggestion, setAddingSuggestion] = useState<Record<string, boolean>>({})
+  const [showBrief, setShowBrief] = useState(false)
+  const [briefCompany, setBriefCompany] = useState<any>(null)
+  const [briefLoading, setBriefLoading] = useState(false)
+  const [briefText, setBriefText] = useState('')
+  const [briefError, setBriefError] = useState('')
+  const [briefCopied, setBriefCopied] = useState(false)
   const chatEnd = useRef<HTMLDivElement>(null)
   const refreshTimer = useRef<any>(null)
 
@@ -258,6 +264,33 @@ export default function Home() {
       if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Research failed — try again' }))
     }
     setResearching(prev => ({ ...prev, [company.id]: false }))
+  }
+
+  async function generateBrief(company: any) {
+    if (!company || briefLoading) return
+    setBriefCompany(company)
+    setShowBrief(true)
+    setBriefLoading(true)
+    setBriefText('')
+    setBriefError('')
+    setBriefCopied(false)
+    try {
+      const res = await fetch('/api/brief/' + company.id, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      const data = await res.json()
+      if (data.error) setBriefError(data.error)
+      else setBriefText(data.brief || '')
+    } catch {
+      setBriefError('Request failed')
+    }
+    setBriefLoading(false)
+  }
+
+  async function copyBrief() {
+    try {
+      await navigator.clipboard.writeText(briefText)
+      setBriefCopied(true)
+      setTimeout(() => setBriefCopied(false), 2000)
+    } catch {}
   }
 
   async function getSuggestions() {
@@ -731,6 +764,12 @@ export default function Home() {
                     style={{ padding:'8px 18px', borderRadius:8, background:C.blue, color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                     🤖 Ask AI
                   </button>
+                  <button onClick={() => generateBrief(selected)}
+                    disabled={briefLoading}
+                    style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B500', fontSize:13, fontWeight:700, cursor: briefLoading ? 'wait' : 'pointer', opacity: briefLoading ? 0.7 : 1 }}>
+                    <FileText size={14} strokeWidth={2.5} />
+                    {briefLoading && briefCompany?.id === selected.id ? 'Generating…' : 'Generate brief'}
+                  </button>
                 </div>
               </div>
 
@@ -1014,7 +1053,60 @@ export default function Home() {
         input::placeholder{color:#9ca3af}
         textarea::placeholder{color:#9ca3af}
         a:hover{opacity:0.8}
+        .spin{animation:spin 1s linear infinite}
       `}</style>
+      
+      {/* ── PRE-PITCH BRIEF MODAL ── */}
+      {showBrief && (
+        <div onClick={() => !briefLoading && setShowBrief(false)}
+          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background:C.surface, borderRadius:16, maxWidth:720, width:'100%', maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <Sparkles size={18} color="#FECC01" />
+                <div>
+                  <div style={{ fontWeight:700, fontSize:15 }}>Pre-pitch brief</div>
+                  <div style={{ fontSize:12, color:'#7CC8C4', marginTop:2 }}>{briefCompany?.name || ''}</div>
+                </div>
+              </div>
+              <button onClick={() => setShowBrief(false)} disabled={briefLoading}
+                style={{ background:'transparent', border:'none', color:'#fff', cursor: briefLoading ? 'wait' : 'pointer', padding:6, borderRadius:6, display:'flex', alignItems:'center' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.6, color:C.text }}>
+              {briefLoading && (
+                <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
+                  <RefreshCw size={16} className="spin" />
+                  Generating brief… this takes ~10–20 seconds.
+                </div>
+              )}
+              {!briefLoading && briefError && (
+                <div style={{ background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', padding:'12px 14px', borderRadius:8, fontSize:13 }}>
+                  {briefError}
+                </div>
+              )}
+              {!briefLoading && !briefError && briefText && (
+                <div style={{ whiteSpace:'pre-wrap', fontFamily:'inherit' }}
+                  dangerouslySetInnerHTML={{ __html: briefText
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#0B1C37">$1</strong>')
+                    .replace(/^- (.+)$/gm, '<span style="display:block;padding-left:14px;position:relative"><span style="position:absolute;left:0;color:#7CC8C4">•</span>$1</span>')
+                  }} />
+              )}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
+              <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search</div>
+              <button onClick={copyBrief} disabled={!briefText || briefLoading}
+                style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: briefCopied ? '#7CC8C4' : '#0B1C37', color: briefCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!briefText || briefLoading) ? 'not-allowed' : 'pointer', opacity: (!briefText || briefLoading) ? 0.5 : 1 }}>
+                <Copy size={14} />
+                {briefCopied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
