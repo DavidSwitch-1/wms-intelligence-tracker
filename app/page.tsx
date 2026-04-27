@@ -215,6 +215,7 @@ export default function Home() {
   const [lookalikeData, setLookalikeData] = useState<any[]>([])
   const [lookalikeError, setLookalikeError] = useState('')
   const [lookalikeSource, setLookalikeSource] = useState<any>(null)
+  const [savedViews, setSavedViews] = useState<{id:string, name:string, filters:{industry?:string, country?:string, wms?:string, signal?:string, query?:string}}[]>([])
 
   const load = useCallback(async () => {
     setRefreshing(true)
@@ -239,6 +240,19 @@ export default function Home() {
   useEffect(() => {
     chatEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Saved views: load from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('wms.savedViews')
+      if (raw) setSavedViews(JSON.parse(raw))
+    } catch {}
+  }, [])
+
+  // Saved views: persist to localStorage on change
+  useEffect(() => {
+    try { localStorage.setItem('wms.savedViews', JSON.stringify(savedViews)) } catch {}
+  }, [savedViews])
 
   // Cron health: fetch on mount + every 60s
   useEffect(() => {
@@ -753,6 +767,24 @@ export default function Home() {
                   </div>
                 )
               })}
+            </div>
+
+            {/* Saved views strip */}
+            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:6, marginBottom:12 }}>
+              {savedViews.map(v => (
+                <span key={v.id} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 4px 4px 10px', borderRadius:99, background:C.surfaceAlt, border:`1px solid ${C.border}`, fontSize:12, color:C.textSub }}>
+                  <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || '') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
+                  <button onClick={() => { if(confirm('Delete saved view "' + v.name + '"?')) setSavedViews(prev => prev.filter(p => p.id !== v.id)) }}
+                    style={{ display:'flex', alignItems:'center', justifyContent:'center', width:18, height:18, padding:0, border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', borderRadius:99 }}>
+                    <X size={11} />
+                  </button>
+                </span>
+              ))}
+              <button onClick={() => { const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined } }]) }}
+                style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:99, background:'transparent', border:`1px dashed ${C.borderHov}`, fontSize:12, color:C.textSub, cursor:'pointer', fontWeight:600 }}>
+                <Plus size={11} /> Save current view
+              </button>
+              {savedViews.length === 0 && (<span style={{ fontSize:11, color:C.textMuted, marginLeft:4 }}>Save filter combos here for one-click recall.</span>)}
             </div>
 
             {/* Search + filter */}
