@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -170,7 +171,7 @@ export default function Home() {
   ])
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
-  const [tab, setTab]         = useState<'db'|'chat'|'add'|'news'>('db')
+  const [tab, setTab] = useState<'dashboard'|'db'|'chat'|'add'|'news'>('dashboard')
   const [selected, setSelected] = useState<any>(null)
   const [form, setForm]       = useState({ name:'', industry:'', country:'', region:'', wms_system:'', vendor:'', version:'', site_name:'', notes:'' })
   const [saving, setSaving]   = useState(false)
@@ -458,6 +459,7 @@ export default function Home() {
         </div>
         <nav style={{ display:'flex', gap:2 }}>
           {([
+            ['dashboard','⚡ Dashboard'],
             ['db','🗃 Database'],
             ['chat','🤖 AI Assistant'],
             ['news',`📰 News${allNews.length > 0 ? ` (${allNews.length})` : ''}`],
@@ -483,6 +485,115 @@ export default function Home() {
       <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 28px' }}>
 
         {/* ── DATABASE TAB ── */}
+        {tab === 'dashboard' && !selected && (() => {
+          const now = Date.now()
+          const day7 = 7 * 24 * 60 * 60 * 1000
+          const day30 = 30 * 24 * 60 * 60 * 1000
+          const allNewsItems = companies.flatMap((c: any) => (c.news_updates || []).map((n: any) => ({ ...n, _company: c })))
+          const hotLeads = allNewsItems
+            .filter((n: any) => {
+              if (!n.signal_type || n.signal_type === 'none') return false
+              const t = new Date(n.published_at || n.created_at).getTime()
+              return now - t < day30 && n.status !== 'dismissed'
+            })
+            .sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
+          const pendingChanges = allNewsItems
+            .filter((n: any) => n.proposed_wms_system && n.status !== 'verified' && n.status !== 'dismissed')
+            .sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
+          const recentNews = allNewsItems.filter((n: any) => now - new Date(n.published_at || n.created_at).getTime() < day7).length
+          const totalManhattan = companies.filter((c: any) => c.wms_entries?.some((w: any) => (w.vendor || '').includes('Manhattan'))).length
+          const totalBlueYonder = companies.filter((c: any) => c.wms_entries?.some((w: any) => (w.vendor || '').includes('Blue Yonder'))).length
+          const totalUnknown = companies.filter((c: any) => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown')).length
+          const stats = [
+            { label: 'Tracked', value: companies.length, accent: C.text },
+            { label: 'Manhattan', value: totalManhattan, accent: C.purple },
+            { label: 'Blue Yonder', value: totalBlueYonder, accent: C.green },
+            { label: 'Unknown', value: totalUnknown, accent: C.yellowBorder },
+            { label: 'News last 7d', value: recentNews, accent: C.blue }
+          ]
+          const sortedNews = [...allNewsItems].sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
+          return (
+            <div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:10, marginBottom:24 }}>
+                {stats.map(s => (
+                  <div key={s.label} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
+                    <div style={{ fontSize:11, color:C.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>{s.label}</div>
+                    <div style={{ fontSize:26, fontWeight:700, color:s.accent, marginTop:4, lineHeight:1 }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, marginTop:8 }}>
+                <Zap size={16} color={C.yellow} />
+                <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Hot Leads This Week</h3>
+                <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
+                <span style={{ fontSize:11, color:C.textMuted, fontWeight:500 }}>{hotLeads.length} signal{hotLeads.length === 1 ? '' : 's'}</span>
+              </div>
+              <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies with hiring or expansion activity in the last 30 days</div>
+              {hotLeads.length === 0 ? (
+                <div style={{ padding:'24px 16px', textAlign:'center', color:C.textMuted, background:C.surface, border:`1px dashed ${C.border}`, borderRadius:10, marginBottom:24, fontSize:13 }}>
+                  No hot signals yet — the nightly cron at 2am UTC will surface new ones.
+                </div>
+              ) : (
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:10, marginBottom:24 }}>
+                  {hotLeads.slice(0, 12).map((n: any) => (
+                    <div key={n.id} onClick={() => { setSelected(n._company); setTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', cursor:'pointer', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                        {signalBadge(n.signal_type)}
+                        <span style={{ fontSize:11, color:C.textMuted, marginLeft:'auto' }}>{timeAgo(n.published_at || n.created_at)}</span>
+                      </div>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>{n._company.name}</div>
+                      <div style={{ fontSize:12, color:C.textSub, lineHeight:1.4 }}>{n.title}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {pendingChanges.length > 0 && (
+                <>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                    <Repeat size={16} color={C.yellow} />
+                    <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Pending WMS Changes</h3>
+                    <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
+                    <span style={{ fontSize:11, color:C.textMuted, fontWeight:500 }}>{pendingChanges.length} pending</span>
+                  </div>
+                  <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies the AI thinks have moved WMS — review and one-click apply</div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:24 }}>
+                    {pendingChanges.slice(0, 6).map((n: any) => (
+                      <div key={n.id} style={{ background:C.yellowLight, border:`1px solid ${C.yellowBorder}`, borderRadius:10, padding:'12px 14px', display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+                        <div style={{ flex:1, minWidth:200 }}>
+                          <div style={{ fontWeight:700, fontSize:13, color:C.text }}>{n._company.name}</div>
+                          <div style={{ fontSize:12, color:C.textSub, display:'flex', alignItems:'center', gap:6 }}>
+                            <span>{(n._company.wms_entries?.[0]?.wms_system) || 'Unknown'}</span>
+                            <ArrowRight size={12} />
+                            <span style={{ color:C.yellow, fontWeight:600 }}>{n.proposed_wms_system}</span>
+                          </div>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); applyChange(n.id) }} disabled={newsBusy[n.id]} style={{ background:C.yellowBorder, color:C.text, border:'none', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:700, cursor: newsBusy[n.id] ? 'default' : 'pointer', opacity: newsBusy[n.id] ? 0.5 : 1 }}>Apply change</button>
+                        <button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, 'dismissed') }} disabled={newsBusy[n.id]} style={{ background:'transparent', color:C.textSub, border:`1px solid ${C.border}`, borderRadius:8, padding:'7px 12px', fontSize:12, fontWeight:500, cursor:'pointer' }}>Dismiss</button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                <Newspaper size={16} color={C.blue} />
+                <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Latest Intelligence</h3>
+                <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
+                <button onClick={() => setTab('news')} style={{ background:'transparent', border:'none', fontSize:11, color:C.blue, fontWeight:600, cursor:'pointer' }}>View all →</button>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {sortedNews.slice(0, 5).map((n: any) => (
+                  <div key={n.id} onClick={() => { setSelected(n._company); setTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 14px', cursor:'pointer', display:'flex', alignItems:'center', gap:10 }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:2 }}>{n.title}</div>
+                      <div style={{ fontSize:11, color:C.textMuted }}><span style={{ color:C.blue, fontWeight:500 }}>{n._company.name}</span> · {timeAgo(n.published_at || n.created_at)}</div>
+                    </div>
+                    {signalBadge(n.signal_type)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
         {tab === 'db' && !selected && (
           <div>
             {/* Stat cards */}
