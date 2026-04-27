@@ -216,6 +216,9 @@ export default function Home() {
   const [lookalikeError, setLookalikeError] = useState('')
   const [lookalikeSource, setLookalikeSource] = useState<any>(null)
   const [savedViews, setSavedViews] = useState<{id:string, name:string, filters:{industry?:string, country?:string, wms?:string, signal?:string, query?:string}}[]>([])
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
+  const keySeqRef = useRef<{val:string, ts:number}>({val:'', ts:0})
 
   const load = useCallback(async () => {
     setRefreshing(true)
@@ -240,6 +243,53 @@ export default function Home() {
   useEffect(() => {
     chatEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    let helpTimer: any = null
+    const onKey = (e: KeyboardEvent) => {
+      const ae = document.activeElement as HTMLElement | null
+      const inField = !!ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)
+      if (e.key === 'Escape') {
+        if (showBrief) { setShowBrief(false); return }
+        if (linkedinModalOpen) { setLinkedinModalOpen(false); return }
+        if (lookalikeOpen) { setLookalikeOpen(false); return }
+        if (shortcutsOpen) { setShortcutsOpen(false); return }
+        if (selected) { setSelected(null); return }
+        if (inField && ae) { ae.blur(); return }
+        return
+      }
+      if (inField) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === '/') {
+        const el = document.querySelector('input[placeholder*="Search"], input[placeholder*="search"]') as HTMLInputElement | null
+        if (el) { el.focus(); try { el.select() } catch{}; e.preventDefault() }
+        return
+      }
+      if (e.key === '?') {
+        setShortcutsOpen(v => !v)
+        if (helpTimer) clearTimeout(helpTimer)
+        helpTimer = setTimeout(() => setShortcutsOpen(false), 5000)
+        e.preventDefault()
+        return
+      }
+      if (e.key === 'b' && selected) { generateBrief(selected); return }
+      if (e.key === 'j') { setHighlightedIndex(i => i + 1); return }
+      if (e.key === 'k') { setHighlightedIndex(i => Math.max(0, i - 1)); return }
+      const now = Date.now()
+      const buf = keySeqRef.current
+      if (now - buf.ts > 1500) buf.val = ''
+      buf.ts = now
+      buf.val += e.key
+      if (buf.val === 'gd') { setTab('dashboard'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'gb') { setTab('db'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'ga') { setTab('chat'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'gn') { setTab('news'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'g+') { setTab('add'); setSelected(null); buf.val = ''; return }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('keydown', onKey); if (helpTimer) clearTimeout(helpTimer) }
+  }, [showBrief, linkedinModalOpen, lookalikeOpen, shortcutsOpen, selected])
 
   // Saved views: load from localStorage on mount
   useEffect(() => {
@@ -1369,6 +1419,29 @@ export default function Home() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHORTCUTS INDICATOR + HELP PANEL */}
+      <div onClick={() => setShortcutsOpen(v => !v)}
+        style={{ position:'fixed', right:14, bottom:14, padding:'6px 12px', borderRadius:99, background:C.surfaceAlt, border:`1px solid ${C.border}`, fontSize:11, color:C.textSub, cursor:'pointer', display:'flex', alignItems:'center', gap:6, zIndex:50 }}>
+        <span style={{ fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize:10, background:C.surface, border:`1px solid ${C.border}`, borderRadius:4, padding:'1px 5px', color:C.text }}>?</span>
+        Shortcuts
+      </div>
+      {shortcutsOpen && (
+        <div style={{ position:'fixed', right:14, bottom:54, padding:'14px 18px', borderRadius:12, background:C.surface, border:`1px solid ${C.border}`, fontSize:12, color:C.textSub, boxShadow:'0 8px 30px rgba(11,28,55,0.12)', zIndex:51, minWidth:260 }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.text }}>Keyboard shortcuts</div>
+            <button onClick={() => setShortcutsOpen(false)} style={{ border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', padding:0, display:'flex' }}><X size={14} /></button>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:'5px 14px' }}>
+            {[['?','Toggle this help'],['g d','Dashboard'],['g b','Database'],['g a','AI Assistant'],['g n','News'],['g +','Add Entry'],['j / k','Navigate items'],['Enter','Open highlighted'],['b','Generate brief'],['l','Draft LinkedIn post'],['/','Focus search'],['Esc','Close modal']].map(([k,v]) => (
+              <div key={k} style={{ display:'contents' }}>
+                <span style={{ fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize:10, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:4, padding:'2px 6px', color:C.text, justifySelf:'start' }}>{k}</span>
+                <span style={{ alignSelf:'center' }}>{v}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
