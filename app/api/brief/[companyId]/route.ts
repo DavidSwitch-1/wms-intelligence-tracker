@@ -9,16 +9,62 @@ const supabase = createClient(
 // Pre-pitch brief: a one-page sales hook tailored to a WMS recruiter.
 // Pulls a single company + last 10 news_updates from Supabase and asks
 // Claude to compose a tight markdown brief. NO web search — DB context only.
+//
+// Caching: briefs are persisted on companies.cached_brief / cached_brief_at
+// with a 7-day TTL. POST is the generate path (cache-first, ?refresh=1 bypass).
+// GET is the read-only path — it returns cached briefs only and never spends
+// tokens, so the UI can preflight without auto-billing.
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+
+function isFresh(at: string | null | undefined): boolean {
+  if (!at) return false
+  const ts = new Date(at).getTime()
+  if (Number.isNaN(ts)) return false
+  return Date.now() - ts < SEVEN_DAYS_MS
+}
 
 export async function POST(req: NextRequest, { params }: { params: { companyId: string } }) {
-  return handle(params.companyId)
+  const url = new URL(req.url)
+  const refresh = url.searchParams.get('refresh') === '1'
+  return generate(params.companyId, { refresh })
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { companyId: string } }) {
-  return handle(params.companyId)
+export async function GET(req: NextRequest, { params }: { params: { companyId: string } }) {
+  const url = new URL(req.url)
+  const refresh = url.searchParams.get('refresh') === '1'
+  // GET never auto-generates. ?refresh=1 on GET still only reads cache —
+  // generation must go through POST so paid calls are explicit.
+  if (refresh) {
+    return generate(params.companyId, { refresh: true })
+  }
+  return readCache(params.companyId)
 }
 
-async function handle(companyId: string) {
+async function readCache(companyId: string) {
+  if (!companyId) {
+    return NextResponse.json({ error: 'companyId required' }, { status: 400 })
+  }
+  const { data, error } = await supabase
+    .from('companies')
+    .select('cached_brief, cached_brief_at')
+    .eq('id', companyId)
+    .single()
+
+  if (error || !data) {
+    return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+  }
+  if (data.cached_brief && isFresh(data.cached_brief_at)) {
+    return NextResponse.json({
+      brief: data.cached_brief,
+      cached: true,
+      cached_at: data.cached_brief_at,
+    })
+  }
+  return NextResponse.json({ brief: null, cached: false })
+}
+
+async function generate(companyId: string, opts: { refresh: boolean }) {
   if (!companyId) {
     return NextResponse.json({ error: 'companyId required' }, { status: 400 })
   }
@@ -31,6 +77,14 @@ async function handle(companyId: string) {
 
   if (companyErr || !company) {
     return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+  }
+
+  if (!opts.refresh && company.cached_brief && isFresh(company.cached_brief_at)) {
+    return NextResponse.json({
+      brief: company.cached_brief,
+      cached: true,
+      cached_at: company.cached_brief_at,
+    })
   }
 
   const { data: newsRows } = await supabase
@@ -75,7 +129,7 @@ LAST RESEARCHED: ${company.last_researched_at || 'never'}
 RECENT NEWS / SIGNALS (most recent first, up to 10)
 ${newsLines}`
 
-  const system = `You are a writing assistant for a UK supply chain recruitment consultancy that places WMS (Warehouse Management System) talent — implementation consultants, solution architects, project managers, and developers across vendors like Manhattan, Blue Yonder, Korber, SAP EWM, Infor, Microlistics, Reply, Mantis, Softeon, Synapse, etc.
+  const system = `You are a writing assistant for a UK supply chain recruitment consultancy that places WMS (Warehouse Management System) talent.
 
 Your job: produce a tight one-page pre-pitch brief the recruiter will read seconds before contacting the target company. Tone: crisp, professional, peer-to-peer. No fluff. No "I hope this finds you well". No emojis. No filler. UK English.
 
@@ -125,5 +179,17 @@ ${ctx}`
     return NextResponse.json({ error: 'No brief produced (stop_reason: ' + (data.stop_reason || 'unknown') + ')' }, { status: 500 })
   }
 
-  return NextResponse.json({ brief })
+  // Persist the freshly-generated brief — best effort, don't fail the request
+  // if the cache write hits a transient error.
+  const cachedAt = new Date().toISOString()
+  try {
+    await supabase
+      .from('companies')
+      .update({ cached_brief: brief, cached_brief_at: cachedAt })
+      .eq('id', companyId)
+  } catch {
+    // swallow — the user still gets the generated brief
+  }
+
+  return NextResponse.json({ brief, cached: false, cached_at: cachedAt })
 }
