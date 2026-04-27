@@ -7,6 +7,89 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 )
 
+function localAnswer(message: string, companies: any[]): string | null {
+  if (!message) return null
+  const msg = String(message).trim()
+  function fmt(list: any[], title: string) {
+    if (!list || list.length === 0) return null
+    const byWms = new Map<string, any[]>()
+    for (const c of list) {
+      const wms = (c.wms_entries || []).map((w: any) => w.wms_system).filter(Boolean).join(' / ') || 'Unknown'
+      if (!byWms.has(wms)) byWms.set(wms, [])
+      byWms.get(wms)!.push(c)
+    }
+    const out: string[] = []
+    out.push(`**${list.length} ${list.length === 1 ? 'company' : 'companies'}** matching **${title}** in our database:`)
+    out.push('')
+    const groups = Array.from(byWms.entries()).sort((a, b) => b[1].length - a[1].length)
+    for (const [wms, group] of groups) {
+      out.push(`**${wms}** (${group.length})`)
+      for (const c of group) {
+        const meta = [c.industry, c.country].filter(Boolean).join(' · ')
+        out.push(`• ${c.name}${meta ? ' — ' + meta : ''}`)
+      }
+      out.push('')
+    }
+    return out.join('\n').trim()
+  }
+  function findByWms(t: string) {
+    const tl = t.toLowerCase()
+    return companies.filter((c: any) => (c.wms_entries || []).some((w: any) =>
+      (w.wms_system || '').toLowerCase().includes(tl) ||
+      (w.vendor || '').toLowerCase().includes(tl) ||
+      (w.version || '').toLowerCase().includes(tl)
+    ))
+  }
+  function clean(s: string) { return s.replace(/[\"']/g, '').replace(/\?+$/, '').replace(/\.\s*$/, '').trim() }
+  // 'who uses X' / 'which companies use X' / 'list X users'
+  let m: RegExpMatchArray | null = null
+  let target: string | null = null
+  if ((m = msg.match(/who(?:'s| is)?\s+(?:uses|is\s+(?:using|on)|are\s+(?:using|on)|using)\s+(.+?)\??$/i))) target = m[1]
+  else if ((m = msg.match(/(?:which|what)\s+companies?\s+(?:use|are\s+(?:using|on)|run|operate|have)\s+(.+?)\??$/i))) target = m[1]
+  else if ((m = msg.match(/(?:list|show|get|give\s+me)\s+(?:all\s+)?(?:the\s+)?(?:companies?\s+)?(?:on|using|with|that\s+use)\s+(.+?)\??$/i))) target = m[1]
+  else if ((m = msg.match(/^(?:users?|customers?)\s+of\s+(.+?)\??$/i))) target = m[1]
+  if (target) {
+    const t = clean(target)
+    const tl = t.toLowerCase()
+    if (tl === 'unknown' || tl === 'unknown wms' || tl === 'an unknown wms') {
+      const unknowns = companies.filter((c: any) => (c.wms_entries || []).some((w: any) => w.wms_system === 'Unknown'))
+      return fmt(unknowns, 'Unknown WMS') || 'All ' + companies.length + ' companies have a known WMS — research is up to date.'
+    }
+    const matches = findByWms(t)
+    if (matches.length > 0) return fmt(matches, t)
+    return 'No companies in our database currently match **' + t + '** (we track ' + companies.length + ' companies). Ask the AI to web-search for fresh candidates instead, e.g. "search the web for companies using ' + t + '".'
+  }
+  // 'which companies are unknown' / 'show unknowns'
+  if (/(?:which|what|list|show|how\s+many).{0,40}\b(?:unknown|no\s+wms|missing\s+wms)\b/i.test(msg)) {
+    const unknowns = companies.filter((c: any) => (c.wms_entries || []).some((w: any) => w.wms_system === 'Unknown'))
+    if (/how\s+many/i.test(msg)) return '**' + unknowns.length + '** of our ' + companies.length + ' companies have an Unknown WMS and are queued for research.'
+    return fmt(unknowns, 'Unknown WMS') || 'All companies have a known WMS — research is up to date.'
+  }
+  // 'how many on X' / 'count of X users'
+  if ((m = msg.match(/how\s+many\s+(?:companies\s+)?(?:are\s+)?(?:on|using|use|with|run)\s+(.+?)\??$/i))) {
+    const t = clean(m[1])
+    const matches = findByWms(t)
+    return '**' + matches.length + '** ' + (matches.length === 1 ? 'company uses' : 'companies use') + ' **' + t + '** in our database (of ' + companies.length + ' tracked).'
+  }
+  // 'tell me about <company>' / 'what does <company> use'
+  if ((m = msg.match(/(?:tell\s+me\s+about|info\s+on|profile\s+(?:of|for)|about)\s+(.+?)\??$/i)) ||
+      (m = msg.match(/^(?:what|which)\s+wms\s+does\s+(.+?)\s+(?:use|run|operate)\??$/i))) {
+    const t = clean(m[1])
+    const tl = t.toLowerCase()
+    const co = companies.find((c: any) => (c.name || '').toLowerCase() === tl) ||
+               companies.find((c: any) => (c.name || '').toLowerCase().includes(tl))
+    if (!co) return null
+    const wmsLines = (co.wms_entries || []).map((w: any) => {
+      const bits = [w.wms_system, w.vendor, w.version, w.site_name].filter(Boolean)
+      return '• ' + bits.join(' · ') + (w.status ? ' (' + w.status + ')' : '')
+    }).join('\n')
+    const newsLines = (co.news_updates || []).slice(0, 3).map((n: any) => '• ' + n.title + (n.published_at ? ' (' + new Date(n.published_at).toLocaleDateString('en-GB') + ')' : '')).join('\n')
+    const meta = [co.industry, co.country, co.region].filter(Boolean).join(' · ')
+    return '**' + co.name + '**' + (meta ? ' — ' + meta : '') + '\n\n**WMS**\n' + (wmsLines || '• No WMS data') + (newsLines ? '\n\n**Recent intel**\n' + newsLines : '')
+  }
+  return null
+}
+
 function timeAgo(iso: string | null | undefined): string | null {
   if (!iso) return null
   const diff = Date.now() - new Date(iso).getTime()
@@ -261,6 +344,12 @@ export default function Home() {
     const msg = input.trim()
     setInput('')
     setMessages(prev => [...prev, { role: 'user', content: msg }])
+    // Fast path: try answering from the local database before calling Claude
+    const local = localAnswer(msg, companies)
+    if (local) {
+      setMessages(prev => [...prev, { role: 'assistant', content: local }])
+      return
+    }
     setLoading(true)
     try {
       const compactCompanies = companies.map((c: any) => {
