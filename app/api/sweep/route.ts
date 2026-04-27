@@ -20,7 +20,7 @@ async function researchOne(company: any) {
     ? `You are a WMS intelligence researcher. Find what WMS a company uses. Background: Red Prairie = Blue Yonder Dispatcher, JDA Discrete = Blue Yonder WMS, Manhattan PKMS/WMOS/WMi are legacy. Respond ONLY with JSON:
 {"found":true/false,"wms_system":"name or null","vendor":"vendor or null","version":"version or null","confidence":"High/Medium/Low","summary":"one sentence finding","source":"URL or source description","news_title":"short headline or null","news_summary":"brief news summary or null","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none"}`
     : `You are a supply chain intelligence researcher. Find recent news about a company's warehouse or WMS activity. Respond ONLY with JSON:
-{"found":true/false,"news_title":"short punchy headline or null","news_summary":"2-3 sentence summary of what you found or null","source":"URL or source description","impact":"High/Medium/Low/Info","wms_change":true/false,"wms_system":"new system if changing, else null","confidence":"High/Medium/Low","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none"}`
+{"found":true/false,"news_title":"short punchy headline or null","news_summary":"2-3 sentence summary of what you found or null","source":"URL or source description","impact":"High/Medium/Low/Info","wms_change":true/false,"wms_system":"new system if changing, else null","vendor":"new vendor if changing, else null","version":"new version if changing, else null","confidence":"High/Medium/Low","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none"}`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -133,6 +133,9 @@ export async function POST(req: NextRequest) {
           source: result.source || null,
           impact_level: result.impact || (result.confidence === 'High' ? 'High' : 'Info'),
           signal_type: result.signal_type && result.signal_type !== 'none' ? result.signal_type : null,
+          proposed_wms_system: !isUnknown && result.wms_change && result.wms_system ? result.wms_system : null,
+          proposed_vendor: !isUnknown && result.wms_change && result.vendor ? result.vendor : null,
+          proposed_version: !isUnknown && result.wms_change && result.version ? result.version : null,
           published_at: new Date().toISOString()
         })
         results.push({ company: company.name, title: newsTitle })
