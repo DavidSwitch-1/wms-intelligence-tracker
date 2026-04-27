@@ -107,13 +107,17 @@ Summary: ${news.summary || '(none)'}
 Proposed WMS change: ${news.proposed_wms_system || '(none)'}
 Source: ${news.source || '(none)'}`
 
-  const system = `You are writing LinkedIn posts for a WMS / supply-chain recruitment consultant at swi-tch. Generate THREE distinct posts about the news item below: (1) **Insightful** — a sharp industry observation, ~120 words, takes a confident position, no fluff. (2) **Conversational** — a story-led / question-led opener that invites comments, ~100 words, ends with a genuine question. (3) **Contrarian** — challenges a prevailing assumption in WMS / supply chain, ~120 words, polite but pointed. Each post must (a) reference the actual signal in the news, (b) demonstrate domain expertise, (c) avoid corporate jargon and emoji spam, (d) end with no more than one tasteful hashtag set (3–5 relevant tags). Format your reply as JSON: \`{"insightful":"...","conversational":"...","contrarian":"..."}\` — nothing else, no markdown fences.`
+  const system = `You are writing LinkedIn posts for a WMS / supply-chain recruitment consultant at swi-tch. Generate THREE distinct posts about the news item below: (1) **Insightful** — a sharp industry observation, ~120 words, takes a confident position, no fluff. (2) **Conversational** — a story-led / question-led opener that invites comments, ~100 words, ends with a genuine question. (3) **Contrarian** — challenges a prevailing assumption in WMS / supply chain, ~120 words, polite but pointed. Each post must (a) reference the actual signal in the news, (b) demonstrate domain expertise, (c) avoid corporate jargon and emoji spam, (d) end with no more than one tasteful hashtag set (3–5 relevant tags).
+
+CRITICAL OUTPUT FORMAT — read carefully:
+Reply with ONLY a single JSON object and nothing else. No markdown fences. No commentary. No preamble like "Sure, here are three posts:" or "Here is the JSON:". No trailing notes. The very first character of your reply must be \`{\` and the very last character must be \`}\`. The object must contain exactly these three string keys: "insightful", "conversational", "contrarian". Each value is the full post body as a single string (newlines inside the string are fine).`
 
   const userPrompt = `Draft three LinkedIn posts for the following news item. Use only the context below — do not speculate beyond it.
 
 ${ctx}`
 
-  // Try Haiku first; fall back to Sonnet if Haiku's JSON refuses to parse.
+  // Try Haiku first; fall back to Sonnet if Haiku's JSON refuses to parse,
+  // or if Haiku returns an object that's missing one of the three keys.
   let posts = await tryGenerate(HAIKU_MODEL, system, userPrompt)
   if (!posts) {
     posts = await tryGenerate(SONNET_FALLBACK, system, userPrompt)
@@ -140,6 +144,43 @@ ${ctx}`
   }
 
   return NextResponse.json({ posts: result, cached: false, cached_at: cachedAt })
+}
+
+// Walk the string and return the first balanced {...} substring.
+// Handles strings (incl. escaped quotes) so braces inside string literals
+// don't fool the depth counter. Returns null if no balanced object is found.
+function extractFirstBalancedObject(s: string): string | null {
+  const start = s.indexOf('{')
+  if (start === -1) return null
+  let depth = 0
+  let inStr = false
+  let strCh = ''
+  let escape = false
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i]
+    if (inStr) {
+      if (escape) { escape = false; continue }
+      if (ch === '\\') { escape = true; continue }
+      if (ch === strCh) { inStr = false }
+      continue
+    }
+    if (ch === '"' || ch === "'") { inStr = true; strCh = ch; continue }
+    if (ch === '{') depth++
+    else if (ch === '}') {
+      depth--
+      if (depth === 0) return s.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
+function hasAllThreeKeys(obj: any): boolean {
+  if (!obj || typeof obj !== 'object') return false
+  return (
+    typeof obj.insightful === 'string' && obj.insightful.length > 0 &&
+    typeof obj.conversational === 'string' && obj.conversational.length > 0 &&
+    typeof obj.contrarian === 'string' && obj.contrarian.length > 0
+  )
 }
 
 async function tryGenerate(model: string, system: string, userPrompt: string): Promise<any | null> {
@@ -170,23 +211,28 @@ async function tryGenerate(model: string, system: string, userPrompt: string): P
 
     if (!raw) return null
 
-    // Strip markdown fences if Claude wrapped the JSON despite instructions.
+    // (a) Strip markdown fences (```json ... ``` or ``` ... ```) if present.
     let cleaned = raw.trim()
-    cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim()
+    cleaned = cleaned.replace(/^```(?:json|JSON)?\s*\n?/i, '').replace(/\n?\s*```\s*$/i, '').trim()
 
     let parsed: any = null
+
+    // First attempt: parse the whole cleaned body.
     try {
       parsed = JSON.parse(cleaned)
     } catch {
-      const match = cleaned.match(/\{[\s\S]*\}/)
-      if (match) {
-        try { parsed = JSON.parse(match[0]) } catch {}
+      // (b) Bracket-counting walker — find the first balanced {...} inside the
+      // body. This is robust to leading preamble like "Sure, here are three..."
+      // and to JSON containing braces inside string literals.
+      const obj = extractFirstBalancedObject(cleaned)
+      if (obj) {
+        try { parsed = JSON.parse(obj) } catch { parsed = null }
       }
     }
 
-    if (!parsed || typeof parsed !== 'object' || !parsed.insightful || !parsed.conversational || !parsed.contrarian) {
-      return null
-    }
+    // (c) Validate that all three required keys are present and non-empty.
+    // If anything is missing, return null so the caller can fall back to Sonnet.
+    if (!hasAllThreeKeys(parsed)) return null
     return parsed
   } catch {
     return null
