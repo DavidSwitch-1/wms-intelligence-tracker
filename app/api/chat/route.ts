@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
+      max_tokens: 4000,
       system,
       tools: [
         {
@@ -23,17 +23,14 @@ export async function POST(req: NextRequest) {
         }
       ],
       messages: messages
-        .filter((m: {role: string}) => m.role !== 'system')
-        .map((m: {role: string; content: string}) => ({
-          role: m.role,
-          content: m.content,
-        })),
-    }),
+        .filter((m: {role: string}) => m.role === 'user' || m.role === 'assistant')
+        .map((m: {role: string, content: string}) => ({ role: m.role, content: m.content }))
+    })
   })
 
   const data = await response.json()
-  
-  // Extract text from potentially multi-block response (web search returns mixed blocks)
+
+  // Concatenate text from potentially multi-block response
   let content = ''
   if (data.content && Array.isArray(data.content)) {
     for (const block of data.content) {
@@ -42,7 +39,19 @@ export async function POST(req: NextRequest) {
       }
     }
   }
-  if (!content) content = 'Sorry, I could not generate a response.'
-  
+
+  // Fallbacks when no text is produced
+  if (!content) {
+    if (data.error) {
+      content = 'AI assistant error: ' + (data.error.message || 'unknown')
+    } else if (data.stop_reason === 'max_tokens') {
+      content = 'Ran out of room before I could write the answer. Try a more specific question, or phrase it without web search cues like "latest" / "recent".'
+    } else if (Array.isArray(data.content) && data.content.some((b: any) => b.type === 'server_tool_use' || b.type === 'web_search_tool_result')) {
+      content = 'I searched the web but the response was cut off before the final answer. Try a more focused question, or ask without web search ("based on the database, ...").'
+    } else {
+      content = 'No response (stop_reason: ' + (data.stop_reason || 'unknown') + ')'
+    }
+  }
+
   return NextResponse.json({ content })
 }
