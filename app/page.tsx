@@ -126,16 +126,39 @@ function signalBadge(t: string | null | undefined) {
 }
 
 const C = {
-  bg:'#f0f2f5', surface:'#ffffff', surfaceAlt:'#f7f8fa',
-  border:'#e2e6ea', borderHov:'#c8cdd4',
-  text:'#1a1f2e', textSub:'#6b7280', textMuted:'#9ca3af',
-  blue:'#2563eb', blueLight:'#eff6ff', blueBorder:'#bfdbfe',
-  purple:'#7c3aed', purpleLight:'#f5f3ff', purpleBorder:'#ddd6fe',
-  green:'#059669', greenLight:'#ecfdf5', greenBorder:'#a7f3d0',
-  red:'#dc2626', redLight:'#fef2f2', redBorder:'#fecaca',
-  amber:'#d97706', amberLight:'#fffbeb', amberBorder:'#fde68a',
-  gray:'#6b7280', grayLight:'#f9fafb', grayBorder:'#e5e7eb',
-  teal:'#0891b2', tealLight:'#ecfeff', tealBorder:'#a5f3fc',
+  bg: '#FAF9F5',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F5F4EE',
+  surfaceMuted: '#F0EEE6',
+  text: '#0B1C37',
+  textSub: '#475569',
+  textMuted: '#94A3B8',
+  border: '#E8E5DD',
+  borderHov: '#D4D0C5',
+  blue: '#0E7C7B',
+  blueLight: '#EFF8F8',
+  blueBorder: '#7CC8C4',
+  yellow: '#B8860B',
+  yellowLight: '#FFF9E0',
+  yellowBorder: '#FECC01',
+  purple: '#7c3aed',
+  purpleLight: '#f5f3ff',
+  purpleBorder: '#ddd6fe',
+  green: '#059669',
+  greenLight: '#ecfdf5',
+  greenBorder: '#a7f3d0',
+  red: '#dc2626',
+  redLight: '#fef2f2',
+  redBorder: '#fecaca',
+  amber: '#B8860B',
+  amberLight: '#FFF9E0',
+  amberBorder: '#FECC01',
+  gray: '#475569',
+  grayLight: '#F8FAFC',
+  grayBorder: '#E2E8F0',
+  teal: '#0891b2',
+  tealLight: '#ecfeff',
+  tealBorder: '#a5f3fc',
 }
 
 export default function Home() {
@@ -419,7 +442,7 @@ export default function Home() {
   const researchingCount = Object.values(researching).filter(Boolean).length
 
   return (
-    <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif' }}>
+    <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'inherit' }}>
 
       {/* ── Header ── */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'0 28px', display:'flex', alignItems:'center', justifyContent:'space-between', height:56, position:'sticky', top:0, zIndex:50, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
