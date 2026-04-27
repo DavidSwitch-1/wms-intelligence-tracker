@@ -75,6 +75,11 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false)
   const [showDismissed, setShowDismissed] = useState(false)
   const [newsBusy, setNewsBusy] = useState<Record<string, boolean>>({})
+  const [bulkText, setBulkText] = useState('')
+  const [bulkIndustry, setBulkIndustry] = useState('')
+  const [bulkCountry, setBulkCountry] = useState('')
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const [bulkResult, setBulkResult] = useState<{ added?: number; skipped?: number; error?: string } | null>(null)
   const chatEnd = useRef<HTMLDivElement>(null)
   const refreshTimer = useRef<any>(null)
 
@@ -140,6 +145,27 @@ export default function Home() {
       if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Research failed — try again' }))
     }
     setResearching(prev => ({ ...prev, [company.id]: false }))
+  }
+
+  async function bulkImport() {
+    if (bulkBusy) return
+    const names = bulkText.split('\n').map(s => s.trim()).filter(Boolean)
+    if (names.length === 0) return
+    setBulkBusy(true)
+    setBulkResult(null)
+    try {
+      const res = await fetch('/api/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companies: names.map(n => ({ name: n, industry: bulkIndustry || undefined, country: bulkCountry || undefined })) })
+      })
+      const data = await res.json()
+      setBulkResult(data)
+      if (data.added > 0) { setBulkText(''); load() }
+    } catch {
+      setBulkResult({ error: 'Import failed' })
+    }
+    setBulkBusy(false)
   }
 
   async function setNewsStatus(newsId: string, status: 'pending' | 'verified' | 'dismissed') {
@@ -642,6 +668,27 @@ export default function Home() {
                 {saving?'Saving...':'Add to Database'}
               </button>
               {saved && <div style={{ marginTop:12, background:C.greenLight, color:C.green, border:`1px solid ${C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>✓ Added successfully!</div>}
+            </div>
+            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
+              <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>Bulk Add Companies</h2>
+              <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Paste a list of company names — one per line. Each is added with WMS = Unknown and queued for auto-research.</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Industry (applies to all)</label>
+                  <input value={bulkIndustry} onChange={e => setBulkIndustry(e.target.value)} placeholder="e.g. 3PL" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Country (applies to all)</label>
+                  <input value={bulkCountry} onChange={e => setBulkCountry(e.target.value)} placeholder="e.g. United Kingdom" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                </div>
+              </div>
+              <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} rows={6} placeholder={'Tesco\nOcado\nDPD UK\nKuehne+Nagel'} style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', resize:'vertical', boxSizing:'border-box', fontFamily:'inherit', marginBottom:14 }} />
+              <button onClick={bulkImport} disabled={bulkBusy || !bulkText.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: bulkBusy || !bulkText.trim() ? 'default' : 'pointer', opacity: bulkBusy || !bulkText.trim() ? 0.5 : 1 }}>{bulkBusy ? 'Importing...' : `Import ${bulkText.split('\n').map(s => s.trim()).filter(Boolean).length} companies`}</button>
+              {bulkResult && (
+                <div style={{ marginTop:12, background: bulkResult.error ? C.redLight : C.greenLight, color: bulkResult.error ? C.red : C.green, border: `1px solid ${bulkResult.error ? C.redBorder : C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>
+                  {bulkResult.error ? `❌ ${bulkResult.error}` : `✓ ${bulkResult.added ?? 0} added · ${bulkResult.skipped ?? 0} skipped (duplicates)`}
+                </div>
+              )}
             </div>
           </div>
         )}
