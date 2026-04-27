@@ -1,10 +1,13 @@
 -- Add token cache columns for AI-generated content.
--- Briefs are cached per company; LinkedIn drafts are cached per news_update.
+-- Briefs are cached per company; LinkedIn drafts are cached per news_update;
+-- InMail messages are cached per company.
 -- TTL is enforced in application code (7 days as of 2026-04-27).
 
 alter table public.companies
   add column if not exists cached_brief text,
-  add column if not exists cached_brief_at timestamptz;
+  add column if not exists cached_brief_at timestamptz,
+  add column if not exists cached_inmail text,
+  add column if not exists cached_inmail_at timestamptz;
 
 alter table public.news_updates
   add column if not exists cached_linkedin_posts jsonb,
