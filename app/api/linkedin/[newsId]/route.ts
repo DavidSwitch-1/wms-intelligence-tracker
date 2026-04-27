@@ -118,9 +118,14 @@ ${ctx}`
 
   // Try Haiku first; fall back to Sonnet if Haiku's JSON refuses to parse,
   // or if Haiku returns an object that's missing one of the three keys.
-  let posts = await tryGenerate(HAIKU_MODEL, system, userPrompt)
-  if (!posts) {
-    posts = await tryGenerate(SONNET_FALLBACK, system, userPrompt)
+  let posts: any = null
+  try {
+    posts = await tryGenerate(HAIKU_MODEL, system, userPrompt)
+    if (!posts) {
+      posts = await tryGenerate(SONNET_FALLBACK, system, userPrompt)
+    }
+  } catch (err: any) {
+    return NextResponse.json({ error: err?.message ?? 'Anthropic API error' }, { status: 502 })
   }
 
   if (!posts) {
@@ -202,6 +207,10 @@ async function tryGenerate(model: string, system: string, userPrompt: string): P
 
     const data = await response.json()
 
+    if (!response.ok || data?.error) {
+      throw Object.assign(new Error(data?.error?.message ?? 'Anthropic API error'), { __anthropicApi: true })
+    }
+
     let raw = ''
     if (Array.isArray(data.content)) {
       for (const block of data.content) {
@@ -234,7 +243,8 @@ async function tryGenerate(model: string, system: string, userPrompt: string): P
     // If anything is missing, return null so the caller can fall back to Sonnet.
     if (!hasAllThreeKeys(parsed)) return null
     return parsed
-  } catch {
+  } catch (e: any) {
+    if (e?.__anthropicApi) throw e
     return null
   }
 }
