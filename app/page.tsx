@@ -838,14 +838,14 @@ export default function Home() {
             <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:6, marginBottom:12 }}>
               {savedViews.map(v => (
                 <span key={v.id} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 4px 4px 10px', borderRadius:99, background:C.surfaceAlt, border:`1px solid ${C.border}`, fontSize:12, color:C.textSub }}>
-                  <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || '') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
+                  <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || ''); setSelected(null); setTab('db') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
                   <button onClick={() => { if(confirm('Delete saved view "' + v.name + '"?')) setSavedViews(prev => prev.filter(p => p.id !== v.id)) }}
                     style={{ display:'flex', alignItems:'center', justifyContent:'center', width:18, height:18, padding:0, border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', borderRadius:99 }}>
                     <X size={11} />
                   </button>
                 </span>
               ))}
-              <button onClick={() => { const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined } }]) }}
+              <button onClick={() => { if (filterVendor === 'All' && !search) { alert('Set a filter or search first, then save the view.'); return } const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined } }]) }}
                 style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:99, background:'transparent', border:`1px dashed ${C.borderHov}`, fontSize:12, color:C.textSub, cursor:'pointer', fontWeight:600 }}>
                 <Plus size={11} /> Save current view
               </button>
