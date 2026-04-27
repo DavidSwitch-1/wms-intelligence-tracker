@@ -263,11 +263,17 @@ export default function Home() {
     setMessages(prev => [...prev, { role: 'user', content: msg }])
     setLoading(true)
     try {
-      const ctx = companies.map(c => {
-        const wms = c.wms_entries?.map((w: any) => `${w.wms_system} (${w.vendor}${w.version ? ', '+w.version : ''})${w.notes ? ' - '+w.notes.substring(0,100) : ''}`).join(', ')
-        const news = c.news_updates?.map((n: any) => `${n.title}: ${n.summary || ''}`).join(' | ')
-        return `${c.name} (${c.industry||''}, ${c.country||''}): WMS=${wms||'Unknown'}${news ? ' | News: '+news : ''}`
+      const compactCompanies = companies.map((c: any) => {
+        const wms = (c.wms_entries || []).map((w: any) => w.wms_system).filter(Boolean).join('/') || 'Unknown'
+        return `${c.name} | ${c.industry || '?'} | ${c.country || '?'} | ${wms}`
       }).join('\n')
+      const recentNews = companies
+        .flatMap((c: any) => (c.news_updates || []).map((n: any) => ({ ...n, _co: c.name })))
+        .sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
+        .slice(0, 10)
+        .map((n: any) => `${n._co}: ${n.title}`)
+        .join('\n')
+      const ctx = `COMPANIES (${companies.length}):\n${compactCompanies}\n\nRECENT NEWS (top 10):\n${recentNews}`
       const res = await fetch('/api/chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
