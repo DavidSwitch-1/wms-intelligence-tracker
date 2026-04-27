@@ -7,6 +7,25 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
 )
 
+function signalBadge(t: string | null | undefined) {
+  if (!t || t === 'none') return null
+  const map: Record<string, { label: string; bg: string; fg: string; bd: string }> = {
+    hiring:        { label: '👤 Hiring',     bg: '#f5f3ff', fg: '#7c3aed', bd: '#ddd6fe' },
+    exec_hire:     { label: '💼 Exec hire',  bg: '#f5f3ff', fg: '#7c3aed', bd: '#ddd6fe' },
+    dc_opening:    { label: '🏗️ New DC',     bg: '#ecfeff', fg: '#0891b2', bd: '#a5f3fc' },
+    wms_migration: { label: '🔄 WMS change', bg: '#eff6ff', fg: '#2563eb', bd: '#bfdbfe' },
+    ma:            { label: '🤝 M&A',        bg: '#fffbeb', fg: '#d97706', bd: '#fde68a' },
+    growth:        { label: '📈 Growth',     bg: '#ecfdf5', fg: '#059669', bd: '#a7f3d0' },
+  }
+  const m = map[t]
+  if (!m) return null
+  return (
+    <span style={{ background: m.bg, color: m.fg, border: `1px solid ${m.bd}`, borderRadius: 20, padding: '2px 9px', fontSize: 11, fontWeight: 600 }}>
+      {m.label}
+    </span>
+  )
+}
+
 const C = {
   bg:'#f0f2f5', surface:'#ffffff', surfaceAlt:'#f7f8fa',
   border:'#e2e6ea', borderHov:'#c8cdd4',
@@ -484,6 +503,7 @@ export default function Home() {
                             borderRadius:20, padding:'2px 8px', fontSize:11, fontWeight:500 }}>
                             {n.impact_level || 'Info'}
                           </span>
+                          {signalBadge(n.signal_type)}
                         </div>
                         <span style={{ fontSize:11, color:C.textMuted }}>
                           {new Date(n.published_at||n.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}
