@@ -199,6 +199,17 @@ export default function Home() {
     setBulkBusy(false)
   }
 
+  async function applyChange(newsId: string) {
+    if (newsBusy[newsId]) return
+    if (!confirm('Apply this proposed WMS change to the company profile? This will overwrite the current WMS entry.')) return
+    setNewsBusy(prev => ({ ...prev, [newsId]: true }))
+    try {
+      await fetch(`/api/news/${newsId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apply: true }) })
+      await load()
+    } catch {}
+    setNewsBusy(prev => ({ ...prev, [newsId]: false }))
+  }
+
   async function setNewsStatus(newsId: string, status: 'pending' | 'verified' | 'dismissed') {
     if (newsBusy[newsId]) return
     setNewsBusy(prev => ({ ...prev, [newsId]: true }))
@@ -596,6 +607,13 @@ export default function Home() {
                           {new Date(n.published_at||n.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}
                         </span>
                       </div>
+                      {n.proposed_wms_system && n.status !== 'verified' && (
+                        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', marginBottom:8, background:C.amberLight, border:`1px solid ${C.amberBorder}`, borderRadius:8, flexWrap:'wrap' }}>
+                          <span style={{ fontSize:12, color:C.amber, fontWeight:600 }}>🔄 Proposed change:</span>
+                          <span style={{ fontSize:12, color:C.textSub }}>{(company?.wms_entries?.[0]?.wms_system) || 'Unknown'} → <span style={{ color:C.amber, fontWeight:600 }}>{n.proposed_wms_system}</span></span>
+                          <button onClick={(e) => { e.stopPropagation(); applyChange(n.id) }} disabled={newsBusy[n.id]} style={{ marginLeft:'auto', background:C.amber, color:'#fff', border:'none', borderRadius:6, padding:'4px 12px', fontSize:11, fontWeight:600, cursor: newsBusy[n.id] ? 'default' : 'pointer', opacity: newsBusy[n.id] ? 0.5 : 1 }}>Apply change</button>
+                        </div>
+                      )}
                       <div style={{ fontWeight:600, fontSize:14, color:C.text, marginBottom:4 }}>{n.title}</div>
                       {n.summary && <div style={{ fontSize:13, color:C.textSub, marginBottom:6 }}>{n.summary}</div>}
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
