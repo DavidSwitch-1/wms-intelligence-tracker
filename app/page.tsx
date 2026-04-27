@@ -219,6 +219,10 @@ export default function Home() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
   const keySeqRef = useRef<{val:string, ts:number}>({val:'', ts:0})
+  const [briefCached, setBriefCached] = useState(false)
+  const [briefCachedAt, setBriefCachedAt] = useState<string|null>(null)
+  const [linkedinCached, setLinkedinCached] = useState(false)
+  const [linkedinCachedAt, setLinkedinCachedAt] = useState<string|null>(null)
 
   const load = useCallback(async () => {
     setRefreshing(true)
@@ -355,7 +359,7 @@ export default function Home() {
     setResearching(prev => ({ ...prev, [company.id]: false }))
   }
 
-  async function generateBrief(company: any) {
+  async function generateBrief(company: any, refresh: boolean = false) {
     if (!company || briefLoading) return
     setBriefCompany(company)
     setShowBrief(true)
@@ -363,11 +367,12 @@ export default function Home() {
     setBriefText('')
     setBriefError('')
     setBriefCopied(false)
+    setBriefCached(false); setBriefCachedAt(null)
     try {
-      const res = await fetch('/api/brief/' + company.id, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      const res = await fetch('/api/brief/' + company.id + (refresh ? '?refresh=1' : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' } })
       const data = await res.json()
       if (data.error) setBriefError(data.error)
-      else setBriefText(data.brief || '')
+      else { setBriefText(data.brief || ''); setBriefCached(!!data.cached); setBriefCachedAt(data.cached_at || null) }
     } catch {
       setBriefError('Request failed')
     }
@@ -398,7 +403,7 @@ export default function Home() {
     } catch {}
   }
 
-    async function generateLinkedInPosts(news: any) {
+    async function generateLinkedInPosts(news: any, refresh: boolean = false) {
     if (!news || linkedinLoading) return
     setLinkedinNewsId(news.id)
     setLinkedinNewsTitle(news.title || '')
@@ -407,11 +412,12 @@ export default function Home() {
     setLinkedinPosts({})
     setLinkedinError('')
     setCopiedVariant('')
+    setLinkedinCached(false); setLinkedinCachedAt(null)
     try {
-      const res = await fetch('/api/linkedin/' + news.id, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      const res = await fetch('/api/linkedin/' + news.id + (refresh ? '?refresh=1' : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' } })
       const data = await res.json()
       if (data.error) setLinkedinError(data.error)
-      else setLinkedinPosts(data.posts || {})
+      else { setLinkedinPosts(data.posts || {}); setLinkedinCached(!!data.cached); setLinkedinCachedAt(data.cached_at || null) }
     } catch {
       setLinkedinError('Request failed')
     }
@@ -621,7 +627,7 @@ export default function Home() {
             <div style={{ fontWeight:700, fontSize:14, color:C.text }}>WMS Intelligence</div>
             <div style={{ color:C.textMuted, fontSize:11 }}>
               {companies.length} companies
-              {researchingCount > 0 && <span style={{ color:C.blue, marginLeft:6 }}> · Researching {researchingCount}...</span>}
+              {researchingCount > 0 && <span style={{ color:C.blue, marginLeft:6 }}>· Researching {researchingCount}...</span>}
             </div>
           </div>
         </div>
@@ -1260,6 +1266,12 @@ export default function Home() {
                 <div>
                   <div style={{ fontWeight:700, fontSize:15 }}>Pre-pitch brief</div>
                   <div style={{ fontSize:12, color:'#7CC8C4', marginTop:2 }}>{briefCompany?.name || ''}</div>
+                  {briefCached && briefCachedAt && (
+                    <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached · {timeAgo(briefCachedAt) || 'just now'}</span>
+                      <button onClick={() => briefCompany && generateBrief(briefCompany, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</button>
+                    </div>
+                  )}
                 </div>
               </div>
               <button onClick={() => setShowBrief(false)} disabled={briefLoading}
@@ -1363,6 +1375,12 @@ export default function Home() {
                 <div>
                   <div style={{ fontWeight:700, fontSize:15 }}>LinkedIn post drafts</div>
                   <div style={{ fontSize:12, color:'#7CC8C4', marginTop:2 }}>{linkedinNewsTitle}</div>
+                  {linkedinCached && linkedinCachedAt && (
+                    <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached · {timeAgo(linkedinCachedAt) || 'just now'}</span>
+                      <button onClick={() => linkedinNewsId && generateLinkedInPosts({id:linkedinNewsId, title:linkedinNewsTitle}, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</button>
+                    </div>
+                  )}
                 </div>
               </div>
               <button onClick={() => setLinkedinModalOpen(false)} disabled={linkedinLoading}
