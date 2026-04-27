@@ -308,6 +308,15 @@ export default function Home() {
     return () => { document.removeEventListener('keydown', onKey); if (helpTimer) clearTimeout(helpTimer) }
   }, [showBrief, linkedinModalOpen, lookalikeOpen, shortcutsOpen, selected])
 
+  // Reset keyboard highlight when switching tabs
+  useEffect(() => { setHighlightedIndex(0) }, [tab])
+  // Smooth-scroll the keyboard-highlighted row into view on index change
+  useEffect(() => {
+    if (tab !== 'db' && tab !== 'news') return
+    const el = document.querySelector(`[data-kb-row="${highlightedIndex}"]`) as HTMLElement | null
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [highlightedIndex, tab])
+
   // Cron health: fetch on mount + every 60s
   useEffect(() => {
     let mounted = true
@@ -888,13 +897,13 @@ export default function Home() {
 
             {/* Cards */}
             <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-              {filtered.map((c: any) => {
+              {filtered.map((c: any, i: number) => {
                 const isUnknown = c.wms_entries?.every((w: any) => w.wms_system === 'Unknown')
                 const isResearching = researching[c.id]
                 const researchResult = researchResults[c.id]
                 return (
-                  <div key={c.id} onClick={() => setSelected(c)}
-                    style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:'14px 20px', cursor:'pointer', transition:'all 0.12s', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}
+                  <div key={c.id} data-kb-row={i} onClick={() => setSelected(c)}
+                    style={{ background: tab==='db' && i===highlightedIndex ? '#FFF8DA' : C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:'14px 20px', cursor:'pointer', transition:'all 0.12s', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', outline: tab==='db' && i===highlightedIndex ? '2px solid #FECC01' : 'none', outlineOffset: tab==='db' && i===highlightedIndex ? '-2px' : 0 }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor=C.blue; el.style.boxShadow='0 2px 8px rgba(37,99,235,0.1)' }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor=C.border; el.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
@@ -1051,8 +1060,8 @@ export default function Home() {
                   const company = companies.find(c => c.id === n.companyId)
                   const isRecent = new Date(n.published_at||n.created_at).getTime() > Date.now() - 24*60*60*1000
                   return (
-                    <div key={n.id || i}
-                      style={{ background:C.surface, border:`1px solid ${isRecent ? C.blueBorder : C.border}`, borderRadius:12, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', cursor:'pointer' }}
+                    <div key={n.id || i} data-kb-row={i}
+                      style={{ background: tab==='news' && i===highlightedIndex ? '#FFF8DA' : C.surface, border:`1px solid ${isRecent ? C.blueBorder : C.border}`, borderRadius:12, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', cursor:'pointer', outline: tab==='news' && i===highlightedIndex ? '2px solid #FECC01' : 'none', outlineOffset: tab==='news' && i===highlightedIndex ? '-2px' : 0 }}
                       onClick={() => { setSelected(company); setTab('db') }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
                         <div style={{ display:'flex', gap:10, alignItems:'center' }}>
