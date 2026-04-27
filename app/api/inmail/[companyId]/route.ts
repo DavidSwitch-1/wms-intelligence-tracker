@@ -155,6 +155,10 @@ ${ctx}`
 
   const data = await response.json()
 
+  if (!response.ok || data?.error) {
+    return NextResponse.json({ error: data?.error?.message ?? 'Anthropic API error' }, { status: 502 })
+  }
+
   let message = ''
   if (Array.isArray(data.content)) {
     for (const block of data.content) {
