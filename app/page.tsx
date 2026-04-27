@@ -80,6 +80,12 @@ export default function Home() {
   const [bulkCountry, setBulkCountry] = useState('')
   const [bulkBusy, setBulkBusy] = useState(false)
   const [bulkResult, setBulkResult] = useState<{ added?: number; skipped?: number; error?: string } | null>(null)
+  const [suggestIndustry, setSuggestIndustry] = useState('3PL')
+  const [suggestCountry, setSuggestCountry] = useState('United Kingdom')
+  const [suggestBusy, setSuggestBusy] = useState(false)
+  const [suggestions, setSuggestions] = useState<any[]>([])
+  const [suggestError, setSuggestError] = useState('')
+  const [addingSuggestion, setAddingSuggestion] = useState<Record<string, boolean>>({})
   const chatEnd = useRef<HTMLDivElement>(null)
   const refreshTimer = useRef<any>(null)
 
@@ -145,6 +151,31 @@ export default function Home() {
       if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Research failed — try again' }))
     }
     setResearching(prev => ({ ...prev, [company.id]: false }))
+  }
+
+  async function getSuggestions() {
+    if (suggestBusy) return
+    setSuggestBusy(true)
+    setSuggestError('')
+    setSuggestions([])
+    try {
+      const res = await fetch('/api/recommend', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ industry: suggestIndustry, country: suggestCountry, count: 10 }) })
+      const data = await res.json()
+      if (data.error) setSuggestError(data.error)
+      else setSuggestions(data.suggestions || [])
+    } catch { setSuggestError('Request failed') }
+    setSuggestBusy(false)
+  }
+
+  async function addSuggestion(s: any) {
+    if (addingSuggestion[s.name]) return
+    setAddingSuggestion(prev => ({ ...prev, [s.name]: true }))
+    try {
+      await fetch('/api/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ companies: [{ name: s.name, industry: s.industry, country: s.country }] }) })
+      setSuggestions(prev => prev.filter(x => x.name !== s.name))
+      load()
+    } catch {}
+    setAddingSuggestion(prev => ({ ...prev, [s.name]: false }))
   }
 
   async function bulkImport() {
@@ -687,6 +718,41 @@ export default function Home() {
               {bulkResult && (
                 <div style={{ marginTop:12, background: bulkResult.error ? C.redLight : C.greenLight, color: bulkResult.error ? C.red : C.green, border: `1px solid ${bulkResult.error ? C.redBorder : C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>
                   {bulkResult.error ? `❌ ${bulkResult.error}` : `✓ ${bulkResult.added ?? 0} added · ${bulkResult.skipped ?? 0} skipped (duplicates)`}
+                </div>
+              )}
+            </div>
+            <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
+              <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>🔍 Discover New Companies</h2>
+              <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Tell Claude what kind of company you're prospecting and it'll search the web for fresh, unduplicated targets — with hiring-signal flags.</p>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Industry / vertical</label>
+                  <input value={suggestIndustry} onChange={e => setSuggestIndustry(e.target.value)} placeholder="3PL, Retail, Supermarket, Pharma, …" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Country</label>
+                  <input value={suggestCountry} onChange={e => setSuggestCountry(e.target.value)} placeholder="e.g. United Kingdom" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                </div>
+              </div>
+              <button onClick={getSuggestions} disabled={suggestBusy || !suggestIndustry.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: suggestBusy || !suggestIndustry.trim() ? 'default' : 'pointer', opacity: suggestBusy || !suggestIndustry.trim() ? 0.5 : 1 }}>{suggestBusy ? '🔍 Searching the web...' : '🔍 Get Claude\'s suggestions'}</button>
+              {suggestError && <div style={{ marginTop:12, background:C.redLight, color:C.red, border:`1px solid ${C.redBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13 }}>{suggestError}</div>}
+              {suggestions.length > 0 && (
+                <div style={{ marginTop:18, display:'flex', flexDirection:'column', gap:10 }}>
+                  {suggestions.map((s: any) => (
+                    <div key={s.name} style={{ background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px 14px' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:10 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4, flexWrap:'wrap' }}>
+                            <span style={{ fontWeight:600, fontSize:14, color:C.text }}>{s.name}</span>
+                            {signalBadge(s.signal)}
+                          </div>
+                          <div style={{ fontSize:12, color:C.textMuted, marginBottom:4 }}>{[s.industry, s.country].filter(Boolean).join(' · ')}</div>
+                          {s.rationale && <div style={{ fontSize:12, color:C.textSub }}>{s.rationale}</div>}
+                        </div>
+                        <button onClick={() => addSuggestion(s)} disabled={addingSuggestion[s.name]} style={{ background:C.blue, color:'#fff', border:'none', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:600, cursor: addingSuggestion[s.name] ? 'default' : 'pointer', opacity: addingSuggestion[s.name] ? 0.5 : 1, flexShrink:0 }}>{addingSuggestion[s.name] ? 'Adding...' : '+ Add'}</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
