@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, CheckCircle2, AlertCircle } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, CheckCircle2, AlertCircle, Users } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -210,6 +210,11 @@ export default function Home() {
   const refreshTimer = useRef<any>(null)
   const [cronHealth, setCronHealth] = useState<{last_sweep_at?:string|null, signals_24h?:number, sweeps_24h?:number, runs_total?:number, last_results?:number, status?:string}|null>(null)
   const [cronExpanded, setCronExpanded] = useState(false)
+  const [lookalikeOpen, setLookalikeOpen] = useState(false)
+  const [lookalikeLoading, setLookalikeLoading] = useState(false)
+  const [lookalikeData, setLookalikeData] = useState<any[]>([])
+  const [lookalikeError, setLookalikeError] = useState('')
+  const [lookalikeSource, setLookalikeSource] = useState<any>(null)
 
   const load = useCallback(async () => {
     setRefreshing(true)
@@ -303,6 +308,22 @@ export default function Home() {
       setBriefError('Request failed')
     }
     setBriefLoading(false)
+  }
+
+  async function fetchLookalike(company: any) {
+    if (!company || lookalikeLoading) return
+    setLookalikeSource(company)
+    setLookalikeOpen(true)
+    setLookalikeLoading(true)
+    setLookalikeData([])
+    setLookalikeError('')
+    try {
+      const res = await fetch('/api/lookalike/' + company.id)
+      const data = await res.json()
+      if (data.error) setLookalikeError(data.error)
+      else setLookalikeData(data.results || data.companies || data.lookalikes || [])
+    } catch { setLookalikeError('Request failed') }
+    setLookalikeLoading(false)
   }
 
   async function copyBrief() {
@@ -854,6 +875,12 @@ export default function Home() {
                     <FileText size={14} strokeWidth={2.5} />
                     {briefLoading && briefCompany?.id === selected.id ? 'Generating…' : 'Generate brief'}
                   </button>
+                  <button onClick={() => fetchLookalike(selected)}
+                    disabled={lookalikeLoading}
+                    style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:8, background:C.yellowLight, color:C.yellow, border:`1px solid ${C.yellowBorder}`, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    <Users size={14} />
+                    {lookalikeLoading && lookalikeSource?.id === selected.id ? 'Searching…' : 'Find similar'}
+                  </button>
                 </div>
               </div>
 
@@ -1190,6 +1217,57 @@ export default function Home() {
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: briefCopied ? '#7CC8C4' : '#0B1C37', color: briefCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!briefText || briefLoading) ? 'not-allowed' : 'pointer', opacity: (!briefText || briefLoading) ? 0.5 : 1 }}>
                 <Copy size={14} />
                 {briefCopied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── LOOKALIKE COMPANIES MODAL ── */}
+      {lookalikeOpen && (
+        <div onClick={() => !lookalikeLoading && setLookalikeOpen(false)}
+          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99, padding:20 }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, width:'min(640px, 100%)', maxHeight:'80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 20px 50px rgba(11,28,55,0.18)' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 22px', borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <Users size={18} color={C.yellow} />
+                <div style={{ fontSize:15, fontWeight:700, color:C.text }}>Companies similar to {lookalikeSource?.name || ''}</div>
+              </div>
+              <button onClick={() => setLookalikeOpen(false)} style={{ border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', display:'flex', alignItems:'center' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding:'14px 22px', overflowY:'auto', flex:1 }}>
+              {lookalikeLoading && (<div className="spin" style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>Searching…</div>)}
+              {!lookalikeLoading && lookalikeError && (<div style={{ color:C.red, fontSize:13, padding:'12px 0' }}>{lookalikeError}</div>)}
+              {!lookalikeLoading && !lookalikeError && lookalikeData.length === 0 && (<div style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>No close lookalikes found yet — try expanding industries via the bulk import.</div>)}
+              {!lookalikeLoading && lookalikeData.length > 0 && lookalikeData.slice(0,10).map((row: any) => {
+                const lk = companies.find((c: any) => c.id === row.id) || row
+                const wmsLine = (lk.wms_entries || []).map((w: any) => w.wms_system).filter(Boolean).join(' / ') || row.wms || 'Unknown'
+                const meta = [lk.industry || row.industry, lk.country || row.country, wmsLine].filter(Boolean).join(' · ')
+                const newsArr = (lk.news_updates || []).slice().sort((a: any, b: any) => new Date(b.published_at||0).getTime() - new Date(a.published_at||0).getTime())
+                const lastNews = newsArr[0]?.published_at
+                const since30 = Date.now() - 30*24*60*60*1000
+                const hot30 = (lk.news_updates || []).filter((n: any) => n.signal_type && n.signal_type !== 'none' && new Date(n.published_at||0).getTime() > since30).length
+                return (
+                  <div key={row.id} onClick={() => { setSelected(lk); setLookalikeOpen(false) }}
+                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:10, cursor:'pointer', borderBottom:`1px solid ${C.border}` }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{lk.name || row.name}</div>
+                      <div style={{ fontSize:11, color:C.textSub, marginTop:2 }}>{meta}</div>
+                    </div>
+                    {lastNews && (<div style={{ fontSize:10, color:C.textMuted }}>{timeAgo(lastNews)}</div>)}
+                    {hot30 > 0 && (<span style={{ fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:99, background:C.yellowLight, color:C.yellow, border:`1px solid ${C.yellowBorder}` }}>{hot30} hot</span>)}
+                  </div>
+                )
+              })}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
+              <div style={{ fontSize:12, color:C.textMuted }}>Top {lookalikeData.length} matches</div>
+              <button onClick={() => setLookalikeOpen(false)}
+                style={{ padding:'8px 16px', borderRadius:8, background:'transparent', color:C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                Close
               </button>
             </div>
           </div>
