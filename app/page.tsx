@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, CheckCircle2, AlertCircle, Users } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -222,6 +222,15 @@ export default function Home() {
   const keySeqRef = useRef<{val:string, ts:number}>({val:'', ts:0})
   const [briefCached, setBriefCached] = useState(false)
   const [briefCachedAt, setBriefCachedAt] = useState<string|null>(null)
+  // InMail drafter state — mirrors the brief modal pattern.
+  const [showInmail, setShowInmail] = useState(false)
+  const [inmailCompany, setInmailCompany] = useState<any>(null)
+  const [inmailLoading, setInmailLoading] = useState(false)
+  const [inmailText, setInmailText] = useState('')
+  const [inmailError, setInmailError] = useState('')
+  const [inmailCopied, setInmailCopied] = useState(false)
+  const [inmailCached, setInmailCached] = useState(false)
+  const [inmailCachedAt, setInmailCachedAt] = useState<string|null>(null)
   // Timeline panel: per-company chronological feed of news_updates.
   const [timelineExpanded, setTimelineExpanded] = useState(false)
   const [expandedTimelineEntries, setExpandedTimelineEntries] = useState<Record<string, boolean>>({})
@@ -281,6 +290,7 @@ export default function Home() {
       const inField = !!ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)
       if (e.key === 'Escape') {
         if (showBrief) { setShowBrief(false); return }
+        if (showInmail) { setShowInmail(false); return }
         if (linkedinModalOpen) { setLinkedinModalOpen(false); return }
         if (lookalikeOpen) { setLookalikeOpen(false); return }
         if (shortcutsOpen) { setShortcutsOpen(false); return }
@@ -318,7 +328,7 @@ export default function Home() {
     }
     document.addEventListener('keydown', onKey)
     return () => { document.removeEventListener('keydown', onKey); if (helpTimer) clearTimeout(helpTimer) }
-  }, [showBrief, linkedinModalOpen, lookalikeOpen, shortcutsOpen, selected])
+  }, [showBrief, showInmail, linkedinModalOpen, lookalikeOpen, shortcutsOpen, selected])
 
   // Reset keyboard highlight when switching tabs
   useEffect(() => { setHighlightedIndex(0) }, [tab])
@@ -421,6 +431,33 @@ export default function Home() {
       await navigator.clipboard.writeText(briefText)
       setBriefCopied(true)
       setTimeout(() => setBriefCopied(false), 2000)
+    } catch {}
+  }
+  async function generateInmail(company: any, refresh: boolean = false) {
+    if (!company || inmailLoading) return
+    setInmailCompany(company)
+    setShowInmail(true)
+    setInmailLoading(true)
+    setInmailText('')
+    setInmailError('')
+    setInmailCopied(false)
+    setInmailCached(false); setInmailCachedAt(null)
+    try {
+      const res = await fetch('/api/inmail/' + company.id + (refresh ? '?refresh=1' : ''), { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+      const data = await res.json()
+      if (data.error) setInmailError(data.error)
+      else { setInmailText(data.message || ''); setInmailCached(!!data.cached); setInmailCachedAt(data.cached_at || null) }
+    } catch {
+      setInmailError('Request failed')
+    }
+    setInmailLoading(false)
+  }
+
+  async function copyInmail() {
+    try {
+      await navigator.clipboard.writeText(inmailText)
+      setInmailCopied(true)
+      setTimeout(() => setInmailCopied(false), 2000)
     } catch {}
   }
 
@@ -986,6 +1023,12 @@ export default function Home() {
                     <Users size={14} />
                     {lookalikeLoading && lookalikeSource?.id === selected.id ? 'Searching…' : 'Find similar'}
                   </button>
+                  <button onClick={() => generateInmail(selected)}
+                    disabled={inmailLoading}
+                    style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B500', fontSize:13, fontWeight:700, cursor: inmailLoading ? 'wait' : 'pointer', opacity: inmailLoading ? 0.7 : 1 }}>
+                    <MessageSquare size={14} strokeWidth={2.5} />
+                    {inmailLoading && inmailCompany?.id === selected.id ? 'Drafting…' : 'Draft InMail'}
+                  </button>
                 </div>
               </div>
 
@@ -1380,6 +1423,59 @@ export default function Home() {
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: briefCopied ? '#7CC8C4' : '#0B1C37', color: briefCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!briefText || briefLoading) ? 'not-allowed' : 'pointer', opacity: (!briefText || briefLoading) ? 0.5 : 1 }}>
                 <Copy size={14} />
                 {briefCopied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── INMAIL MODAL ── */}
+      {showInmail && (
+        <div onClick={() => !inmailLoading && setShowInmail(false)}
+          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+          <div onClick={(e) => e.stopPropagation()}
+            style={{ background:C.surface, borderRadius:16, maxWidth:640, width:'100%', maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <MessageSquare size={18} color="#FECC01" />
+                <div>
+                  <div style={{ fontWeight:700, fontSize:15 }}>Quick InMail</div>
+                  <div style={{ fontSize:12, color:'#7CC8C4', marginTop:2 }}>{inmailCompany?.name || ''}</div>
+                  {inmailCached && inmailCachedAt && (
+                    <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached · {timeAgo(inmailCachedAt) || 'just now'}</span>
+                      <button onClick={() => inmailCompany && generateInmail(inmailCompany, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button onClick={() => setShowInmail(false)} disabled={inmailLoading}
+                style={{ background:'transparent', border:'none', color:'#fff', cursor: inmailLoading ? 'wait' : 'pointer', padding:6, borderRadius:6, display:'flex', alignItems:'center' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.65, color:C.text, background:C.bg }}>
+              {inmailLoading && (
+                <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
+                  <RefreshCw size={16} className="spin" />
+                  Drafting InMail… this takes ~5–10 seconds.
+                </div>
+              )}
+              {!inmailLoading && inmailError && (
+                <div style={{ background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', padding:'12px 14px', borderRadius:8, fontSize:13 }}>
+                  {inmailError}
+                </div>
+              )}
+              {!inmailLoading && !inmailError && inmailText && (
+                <div style={{ whiteSpace:'pre-wrap', fontFamily:'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace', fontSize:13.5, lineHeight:1.7, color:C.text, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'16px 18px' }}>{inmailText}</div>
+              )}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
+              <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search · ~100–130 words</div>
+              <button onClick={copyInmail} disabled={!inmailText || inmailLoading}
+                style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: inmailCopied ? '#7CC8C4' : '#0B1C37', color: inmailCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!inmailText || inmailLoading) ? 'not-allowed' : 'pointer', opacity: (!inmailText || inmailLoading) ? 0.5 : 1 }}>
+                <Copy size={14} />
+                {inmailCopied ? 'Copied' : 'Copy'}
               </button>
             </div>
           </div>
