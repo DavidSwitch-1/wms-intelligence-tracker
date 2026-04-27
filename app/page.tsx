@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, CheckCircle2, AlertCircle } from 'lucide-react'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -208,6 +208,8 @@ export default function Home() {
   const [copiedVariant, setCopiedVariant] = useState<string>('')
   const chatEnd = useRef<HTMLDivElement>(null)
   const refreshTimer = useRef<any>(null)
+  const [cronHealth, setCronHealth] = useState<{last_sweep_at?:string|null, signals_24h?:number, sweeps_24h?:number, runs_total?:number, last_results?:number, status?:string}|null>(null)
+  const [cronExpanded, setCronExpanded] = useState(false)
 
   const load = useCallback(async () => {
     setRefreshing(true)
@@ -232,6 +234,17 @@ export default function Home() {
   useEffect(() => {
     chatEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Cron health: fetch on mount + every 60s
+  useEffect(() => {
+    let mounted = true
+    const fetchHealth = () => {
+      fetch('/api/health/cron').then(r => r.json()).then(d => { if (mounted) setCronHealth(d) }).catch(() => {})
+    }
+    fetchHealth()
+    const t = setInterval(fetchHealth, 60 * 1000)
+    return () => { mounted = false; clearInterval(t) }
+  }, [])
 
   // On-visit sweep: calls /api/sweep which researches 10 companies
   // prioritising unknowns first, then companies not recently checked
@@ -584,6 +597,36 @@ export default function Home() {
           const sortedNews = [...allNewsItems].sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
           return (
             <div>
+              {cronHealth && (() => {
+                const lastIso = cronHealth.last_sweep_at
+                const ageHrs = lastIso ? (Date.now() - new Date(lastIso).getTime()) / 3600000 : 999
+                const dotColor = ageHrs < 6 ? C.green : ageHrs < 24 ? C.amber : C.red
+                const StatusIcon = ageHrs < 24 ? CheckCircle2 : AlertCircle
+                return (
+                  <div style={{ position:'relative', marginBottom:14 }}>
+                    <div onClick={() => setCronExpanded(v => !v)}
+                      style={{ display:'flex', alignItems:'center', gap:14, padding:'10px 14px', background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, cursor:'pointer', fontSize:12 }}>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:6, color:dotColor, fontWeight:600 }}>
+                        <span style={{ width:8, height:8, borderRadius:'50%', background:dotColor }} />
+                        <StatusIcon size={14} />
+                      </span>
+                      <span style={{ color:C.textSub }}>Last sweep: <strong style={{ color:C.text }}>{lastIso ? timeAgo(lastIso) : 'never'}</strong></span>
+                      <span style={{ color:C.textSub }}>Signals 24h: <strong style={{ color:C.text }}>{cronHealth.signals_24h ?? 0}</strong></span>
+                      <RefreshCw size={12} style={{ color:C.textMuted, marginLeft:'auto' }} />
+                    </div>
+                    {cronExpanded && (
+                      <div style={{ marginTop:6, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 14px', fontSize:11, color:C.textSub, lineHeight:1.7 }}>
+                        <div>last_sweep_at: <strong style={{color:C.text}}>{cronHealth.last_sweep_at || 'never'}</strong></div>
+                        <div>signals_24h: <strong style={{color:C.text}}>{cronHealth.signals_24h ?? 0}</strong></div>
+                        <div>sweeps_24h: <strong style={{color:C.text}}>{cronHealth.sweeps_24h ?? 0}</strong></div>
+                        <div>runs_total: <strong style={{color:C.text}}>{cronHealth.runs_total ?? 0}</strong></div>
+                        <div>last_results: <strong style={{color:C.text}}>{cronHealth.last_results ?? 0}</strong></div>
+                        <div>status: <strong style={{color:C.text}}>{cronHealth.status || 'unknown'}</strong></div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
               <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:10, marginBottom:24 }}>
                 {stats.map(s => (
                   <div key={s.label} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
