@@ -73,6 +73,8 @@ export default function Home() {
   const [researchResults, setResearchResults] = useState<Record<string,string>>({})
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
   const [refreshing, setRefreshing] = useState(false)
+  const [showDismissed, setShowDismissed] = useState(false)
+  const [newsBusy, setNewsBusy] = useState<Record<string, boolean>>({})
   const chatEnd = useRef<HTMLDivElement>(null)
   const refreshTimer = useRef<any>(null)
 
@@ -140,9 +142,20 @@ export default function Home() {
     setResearching(prev => ({ ...prev, [company.id]: false }))
   }
 
+  async function setNewsStatus(newsId: string, status: 'pending' | 'verified' | 'dismissed') {
+    if (newsBusy[newsId]) return
+    setNewsBusy(prev => ({ ...prev, [newsId]: true }))
+    try {
+      await fetch(`/api/news/${newsId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
+      await load()
+    } catch {}
+    setNewsBusy(prev => ({ ...prev, [newsId]: false }))
+  }
+
   // All news across all companies, sorted newest first
   const allNews = companies
     .flatMap(c => (c.news_updates || []).map((n: any) => ({ ...n, companyName: c.name, companyId: c.id })))
+    .filter(n => showDismissed || n.status !== 'dismissed')
     .sort((a, b) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
 
   const filtered = companies.filter(c => {
@@ -486,6 +499,7 @@ export default function Home() {
                 <p style={{ margin:'4px 0 0', fontSize:13, color:C.textSub }}>All news, research findings, and WMS updates — newest first. Auto-refreshes every 5 minutes.</p>
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <label style={{ fontSize:12, color:C.textSub, display:'flex', alignItems:'center', gap:6, cursor:'pointer', marginRight:8 }}><input type="checkbox" checked={showDismissed} onChange={e => setShowDismissed(e.target.checked)} style={{ margin:0 }} />Show dismissed</label>
                 <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</span>
                 <button onClick={load} disabled={refreshing}
                   style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'7px 14px', fontSize:13, fontWeight:600, cursor:refreshing?'default':'pointer', opacity:refreshing?0.6:1, display:'flex', alignItems:'center', gap:6 }}>
@@ -530,7 +544,7 @@ export default function Home() {
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                         <span style={{ fontSize:12, color:C.blue, fontWeight:500 }}>{n.companyName}</span>
                         {company?.last_researched_at && <span style={{ fontSize:11, color:C.textMuted, marginLeft:6 }}>· last researched {timeAgo(company.last_researched_at)}</span>}
-                        {n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none' }}>Source ↗</a>}
+                        <button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'verified' ? 'pending' : 'verified') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'verified' ? C.greenLight : 'transparent', color: n.status === 'verified' ? C.green : C.textSub, border: `1px solid ${n.status === 'verified' ? C.greenBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>✓ {n.status === 'verified' ? 'Verified' : 'Verify'}</button><button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'dismissed' ? 'pending' : 'dismissed') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'dismissed' ? C.redLight : 'transparent', color: n.status === 'dismissed' ? C.red : C.textSub, border: `1px solid ${n.status === 'dismissed' ? C.redBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>✕ {n.status === 'dismissed' ? 'Dismissed' : 'Dismiss'}</button>{n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none' }}>Source ↗</a>}
                       </div>
                     </div>
                   )
