@@ -1521,7 +1521,15 @@ export default function Home() {
               )}
             </div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
-              <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search</div>
+              <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+                <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search</div>
+                {briefCached && briefCompany && !briefLoading && briefText && (
+                  <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
+                    <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(briefCachedAt) || 'just now'}</span>
+                    <button onClick={() => generateBrief(briefCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</button>
+                  </div>
+                )}
+              </div>
               <button onClick={copyBrief} disabled={!briefText || briefLoading}
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: briefCopied ? '#7CC8C4' : '#0B1C37', color: briefCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!briefText || briefLoading) ? 'not-allowed' : 'pointer', opacity: (!briefText || briefLoading) ? 0.5 : 1 }}>
                 <Copy size={14} />
@@ -1574,7 +1582,15 @@ export default function Home() {
               )}
             </div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
-              <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search · ~100–130 words</div>
+              <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+                <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search · ~100–130 words</div>
+                {inmailCached && inmailCompany && !inmailLoading && inmailText && (
+                  <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
+                    <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(inmailCachedAt) || 'just now'}</span>
+                    <button onClick={() => generateInmail(inmailCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</button>
+                  </div>
+                )}
+              </div>
               <button onClick={copyInmail} disabled={!inmailText || inmailLoading}
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: inmailCopied ? '#7CC8C4' : '#0B1C37', color: inmailCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!inmailText || inmailLoading) ? 'not-allowed' : 'pointer', opacity: (!inmailText || inmailLoading) ? 0.5 : 1 }}>
                 <Copy size={14} />
@@ -1699,7 +1715,15 @@ export default function Home() {
               })}
             </div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
-              <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search</div>
+              <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+                <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search</div>
+                {linkedinCached && linkedinNewsId && !linkedinLoading && (
+                  <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
+                    <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(linkedinCachedAt) || 'just now'}</span>
+                    <button onClick={() => generateLinkedInPosts({ id: linkedinNewsId, title: linkedinNewsTitle }, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</button>
+                  </div>
+                )}
+              </div>
               <button onClick={() => setLinkedinModalOpen(false)}
                 style={{ padding:'8px 16px', borderRadius:8, background:'transparent', color:C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:600, cursor:'pointer' }}>
                 Close
