@@ -118,11 +118,14 @@ async function generate(companyId: string, opts: { refresh: boolean }) {
       }).join('\n')
     : '- No recent news on file'
 
+  const tplLine = company.third_party_logistics ? `\n3PL provider: ${company.third_party_logistics}` : ''
+  const is3plLine = company.is_3pl ? `\nIs itself a 3PL: yes` : ''
+
   const ctx = `COMPANY
 Name: ${company.name}
 Industry: ${company.industry || 'Unknown'}
 Country: ${company.country || 'Unknown'}
-Region: ${company.region || ''}
+Region: ${company.region || ''}${tplLine}${is3plLine}
 
 CURRENT WMS STACK
 ${wmsLines}
