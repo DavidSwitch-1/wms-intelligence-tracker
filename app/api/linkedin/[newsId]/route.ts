@@ -113,7 +113,10 @@ Source: ${news.source || '(none)'}`
   const system = `You are writing LinkedIn posts for a WMS / supply-chain recruitment consultant at swi-tch. Generate THREE distinct posts about the news item below: (1) **Insightful** — a sharp industry observation, ~120 words, takes a confident position, no fluff. (2) **Conversational** — a story-led / question-led opener that invites comments, ~100 words, ends with a genuine question. (3) **Contrarian** — challenges a prevailing assumption in WMS / supply chain, ~120 words, polite but pointed. Each post must (a) reference the actual signal in the news, (b) demonstrate domain expertise, (c) avoid corporate jargon and emoji spam, (d) end with no more than one tasteful hashtag set (3–5 relevant tags).
 
 CRITICAL OUTPUT FORMAT — read carefully:
-Reply with ONLY a single JSON object and nothing else. No markdown fences. No commentary. No preamble like "Sure, here are three posts:" or "Here is the JSON:". No trailing notes. The very first character of your reply must be \`{\` and the very last character must be \`}\`. The object must contain exactly these three string keys: "insightful", "conversational", "contrarian". Each value is the full post body as a single string (newlines inside the string are fine).`
+Reply with ONLY a single JSON object and nothing else. No markdown fences. No commentary. No preamble like "Sure, here are three posts:" or "Here is the JSON:". No trailing notes. The very first character of your reply must be \`{\` and the very last character must be \`}\`. The object must contain exactly these three string keys: "insightful", "conversational", "contrarian". Each value is the full post body as a single string (newlines inside the string are fine).
+
+When evaluating news items, prioritise those with a recent \`published_at\` date. Treat any signal older than 12 months as historical context only — do not present it as a current opportunity or talking point. If only stale signals are available, say so explicitly rather than overselling.
+`
 
   const userPrompt = `Draft three LinkedIn posts for the following news item. Use only the context below — do not speculate beyond it.
 
