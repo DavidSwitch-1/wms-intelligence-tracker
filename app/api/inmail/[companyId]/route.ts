@@ -133,6 +133,8 @@ ${wmsLines}
 LAST RESEARCHED: ${company.last_researched_at || 'never'}
 
 RECENT NEWS / SIGNALS (most recent first, up to 10)
+When evaluating news items, prioritise those with a recent \`published_at\` date. Treat any signal older than 12 months as historical context only — do not present it as a current opportunity or talking point. If only stale signals are available, say so explicitly rather than overselling.
+
 ${newsLines}`
 
   const system = `You are writing a LinkedIn InMail for a WMS / supply-chain recruiter at swi-tch reaching out to a hiring manager at the company below. Write ONE message of 100-130 words. Reference (a) something specific from their recent signals (hiring activity, WMS change, expansion), (b) a relevant insight about their current WMS stack, and (c) a soft CTA to chat for 15 min about their hiring plans. Conversational tone, not corporate. No emoji. No "I hope this finds you well". Sign off as just "David". Reply with ONLY the message text — no subject line, no preamble, no markdown.`
