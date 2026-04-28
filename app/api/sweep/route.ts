@@ -28,10 +28,10 @@ async function researchOne(company: any) {
     : `Search for recent news about ${company.name}'s warehouse or supply chain technology. They currently use ${knownWMS}. Look for: WMS upgrades, new warehouse openings, system migrations, technology partnerships, distribution centre announcements, executive hires in ops/IT/supply chain, or active WMS-related job postings in the last 12 months. These are all strong signals for a recruitment firm.`
 
   const systemPrompt = isUnknown
-    ? `You are a WMS intelligence researcher. Find what WMS a company uses. Background: Red Prairie = Blue Yonder Dispatcher, JDA Discrete = Blue Yonder WMS, Manhattan PKMS/WMOS/WMi are legacy. Respond ONLY with JSON:
-{"found":true/false,"wms_system":"name or null","vendor":"vendor or null","version":"version or null","confidence":"High/Medium/Low","summary":"one sentence finding","source":"URL or source description","news_title":"short headline or null","news_summary":"brief news summary or null","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none"}`
-    : `You are a supply chain intelligence researcher. Find recent news about a company's warehouse or WMS activity. Respond ONLY with JSON:
-{"found":true/false,"news_title":"short punchy headline or null","news_summary":"2-3 sentence summary of what you found or null","source":"URL or source description","impact":"High/Medium/Low/Info","wms_change":true/false,"wms_system":"new system if changing, else null","vendor":"new vendor if changing, else null","version":"new version if changing, else null","confidence":"High/Medium/Low","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none"}`
+    ? `You are a WMS intelligence researcher. Find what WMS a company uses. Background: Red Prairie = Blue Yonder Dispatcher, JDA Discrete = Blue Yonder WMS, Manhattan PKMS/WMOS/WMi are legacy. Also note any 3PL provider (e.g. Unipart, GXO, DHL Supply Chain, Wincanton, Gist, Clipper, Yusen, Kuehne+Nagel, XPO, Bleckmann, Geodis) the company outsources warehousing to, and flag if the company itself IS a 3PL operator (runs warehouses for other brands as primary business). Respond ONLY with JSON:
+{"found":true/false,"wms_system":"name or null","vendor":"vendor or null","version":"version or null","confidence":"High/Medium/Low","summary":"one sentence finding","source":"URL or source description","news_title":"short headline or null","news_summary":"brief news summary or null","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none","third_party_logistics":"3PL provider name (e.g. Unipart) or null","is_3pl":true/false}`
+    : `You are a supply chain intelligence researcher. Find recent news about a company's warehouse or WMS activity. Also note any 3PL provider (e.g. Unipart, GXO, DHL Supply Chain, Wincanton, Gist, Clipper, Yusen, Kuehne+Nagel, XPO, Bleckmann, Geodis) the company outsources warehousing to, and flag if the company itself IS a 3PL operator. Respond ONLY with JSON:
+{"found":true/false,"news_title":"short punchy headline or null","news_summary":"2-3 sentence summary of what you found or null","source":"URL or source description","impact":"High/Medium/Low/Info","wms_change":true/false,"wms_system":"new system if changing, else null","vendor":"new vendor if changing, else null","version":"new version if changing, else null","confidence":"High/Medium/Low","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none","third_party_logistics":"3PL provider name (e.g. Unipart) or null","is_3pl":true/false}`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -315,6 +315,14 @@ export async function POST(req: NextRequest) {
       .from('companies')
       .update({ last_researched_at: new Date().toISOString() })
       .eq('id', company.id)
+
+    // Apply any 3PL info the AI returned (best-effort, both fields optional).
+    if (result && (result.third_party_logistics || result.is_3pl === true)) {
+      const tplUpdate: any = {}
+      if (result.third_party_logistics) tplUpdate.third_party_logistics = String(result.third_party_logistics)
+      if (result.is_3pl === true) tplUpdate.is_3pl = true
+      try { await supabase.from('companies').update(tplUpdate).eq('id', company.id) } catch { /* swallow */ }
+    }
 
     if (!result || !result.found) continue
 
