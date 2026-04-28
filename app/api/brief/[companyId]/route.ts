@@ -130,6 +130,8 @@ ${wmsLines}
 LAST RESEARCHED: ${company.last_researched_at || 'never'}
 
 RECENT NEWS / SIGNALS (most recent first, up to 10)
+When evaluating news items, prioritise those with a recent \`published_at\` date. Treat any signal older than 12 months as historical context only — do not present it as a current opportunity or talking point. If only stale signals are available, say so explicitly rather than overselling.
+
 ${newsLines}`
 
   const system = `You are a writing assistant for a UK supply chain recruitment consultancy that places WMS (Warehouse Management System) talent.
