@@ -1779,9 +1779,9 @@ export default function Home() {
             <button onClick={() => setShortcutsOpen(false)} style={{ border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', padding:0, display:'flex' }}><X size={14} /></button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:'5px 14px' }}>
-            {[['?','Toggle this help'],['g d','Dashboard'],['g b','Database'],['g a','AI Assistant'],['g n','News'],['g +','Add Entry'],['j / k','Navigate items'],['Enter','Open highlighted'],['b','Generate brief'],['l','Draft LinkedIn post'],['/','Focus search'],['Esc','Close modal']].map(([k,v]) => (
+            {[['?','Toggle this help'],['g d','Dashboard'],['g m','Map'],['g b','Database'],['g a','AI Assistant'],['g n','News'],['g +','Add Entry'],['j / k','Navigate items'],['Enter','Open highlighted'],['b','Generate brief'],['l','Draft LinkedIn post'],['/','Focus search'],['Esc','Close modal']].map(([k,v]) => (
               <div key={k} style={{ display:'contents' }}>
-                <span style={{ fontFamily:'ui-monospace, SFMono-Regular, Menlo, monospace', fontSize:10, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:4, padding:'2px 6px', color:C.text, justifySelf:'start' }}>{k}</span>
+                <kbd style={{ display:'inline-block', fontFamily:'ui-monospace, "SF Mono", Consolas, monospace', fontSize:11, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:4, padding:'1px 6px', color:C.text, minWidth:18, textAlign:'center', justifySelf:'start' }}>{k}</kbd>
                 <span style={{ alignSelf:'center' }}>{v}</span>
               </div>
             ))}
