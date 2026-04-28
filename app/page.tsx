@@ -6,6 +6,7 @@ import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, R
 import dynamic from 'next/dynamic'
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
+import { renderMarkdown } from '@/lib/markdown'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -1319,12 +1320,14 @@ export default function Home() {
               {messages.map((m, i) => (
                 <div key={i} style={{ display:'flex', justifyContent:m.role==='user'?'flex-end':'flex-start', gap:10 }}>
                   {m.role==='assistant' && <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, marginTop:2 }}></div>}
-                  <div style={{ maxWidth:'72%', borderRadius:14, padding:'10px 16px', fontSize:14, lineHeight:1.65, whiteSpace:'pre-wrap',
-                    background: m.role==='user' ? 'linear-gradient(135deg,#2563eb,#1d4ed8)' : C.surfaceAlt,
-                    color: m.role==='user' ? '#fff' : C.text,
-                    border: m.role==='user' ? 'none' : `1px solid ${C.border}` }}>
-                    {m.content}
-                  </div>
+                  {m.role === 'user' ? (
+                    <div style={{ maxWidth:'72%', borderRadius:14, padding:'10px 16px', fontSize:14, lineHeight:1.65, whiteSpace:'pre-wrap', background:'linear-gradient(135deg,#2563eb,#1d4ed8)', color:'#fff', border:'none' }}>
+                      {m.content}
+                    </div>
+                  ) : (
+                    <div style={{ maxWidth:'72%', borderRadius:14, padding:'10px 16px', fontSize:14, lineHeight:1.65, background:C.surfaceAlt, color:C.text, border:`1px solid ${C.border}` }}
+                      dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} />
+                  )}
                 </div>
               ))}
               {loading && (
@@ -1513,12 +1516,8 @@ export default function Home() {
                 </div>
               )}
               {!briefLoading && !briefError && briefText && (
-                <div style={{ whiteSpace:'pre-wrap', fontFamily:'inherit' }}
-                  dangerouslySetInnerHTML={{ __html: briefText
-                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-                    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:#0B1C37">$1</strong>')
-                    .replace(/^- (.+)$/gm, '<span style="display:block;padding-left:14px;position:relative"><span style="position:absolute;left:0;color:#7CC8C4">•</span>$1</span>')
-                  }} />
+                <div style={{ fontFamily:'inherit' }}
+                  dangerouslySetInnerHTML={{ __html: renderMarkdown(briefText) }} />
               )}
             </div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
