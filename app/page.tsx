@@ -942,7 +942,19 @@ export default function Home() {
                 </select>
               </div>
             </div>
-            <div style={{ height: 'calc(100vh - 220px)', minHeight: 500, borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+            <div style={{ position:'relative', height: 'calc(100vh - 220px)', minHeight: 500, borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+              {companies.length > 0 && companies.filter((c: any) => c.latitude && c.longitude).length === 0 && (
+                <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', zIndex:500 }}>
+                  <div style={{ pointerEvents:'auto', maxWidth:480, padding:24, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, textAlign:'center', boxShadow:'0 8px 30px rgba(11,28,55,0.12)' }}>
+                    <div style={{ fontSize:14, fontWeight:600, color:C.text, marginBottom:8 }}>No companies geocoded yet</div>
+                    <div style={{ fontSize:12, color:C.textSub, marginBottom:12, lineHeight:1.5 }}>Run this command to populate locations. The Nominatim service is rate-limited so you&apos;ll need to run it 4 times to cover all 187 companies.</div>
+                    <code style={{ display:'block', padding:12, background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, fontSize:11, fontFamily:'ui-monospace, "SF Mono", Consolas, monospace', color:C.text, marginBottom:12, wordBreak:'break-all' }}>
+                      {`curl -H "Authorization: Bearer $CRON_SECRET" -X POST `}{typeof window !== 'undefined' ? window.location.origin : ''}{`/api/geocode`}
+                    </code>
+                    <button onClick={() => { try { navigator.clipboard.writeText(`curl -H "Authorization: Bearer $CRON_SECRET" -X POST ${window.location.origin}/api/geocode`) } catch(_) {} }} style={{ padding:'6px 12px', background:C.yellowLight, border:`1px solid ${C.yellowBorder}`, borderRadius:6, fontSize:11, color:C.text, cursor:'pointer' }}>Copy command</button>
+                  </div>
+                </div>
+              )}
               <MapView
                 companies={companies.filter((c: any) => {
                   if (!c.latitude || !c.longitude) return false
