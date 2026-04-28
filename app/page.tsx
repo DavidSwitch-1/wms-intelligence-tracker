@@ -930,7 +930,8 @@ export default function Home() {
                   if (map3plFilter === 'is' && !c.is_3pl) return false
                   return true
                 })}
-                onCompanyClick={(co: any) => { setSelected(co); setTab('db') }}
+                totalCount={companies.length}
+                onSelect={(companyId: string) => { const co = companies.find((x: any) => x.id === companyId); if (co) { setSelected(co); setTab('db') } }}
               />
             </div>
           </div>
