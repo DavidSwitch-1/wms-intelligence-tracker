@@ -732,9 +732,9 @@ export default function Home() {
     <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'inherit', paddingBottom: isMobile ? 76 : 0, transition:'padding 200ms cubic-bezier(0.4,0,0.2,1)' }}>
 
       {/* ── Header ── */}
-      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'0 28px', display:'flex', alignItems:'center', justifyContent:'space-between', height:56, position:'sticky', top:0, zIndex:50, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
+      <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding: isMobile ? '0 14px' : '0 28px', display:'flex', alignItems:'center', justifyContent:'space-between', height: isMobile ? 52 : 56, position:'sticky', top:0, zIndex:50, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:32, height:32, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16 }}></div>
+          <div style={{ width:32, height:32, borderRadius:8, background:'#0B1C37', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, letterSpacing:0.5, color:'#FECC01', boxShadow:'inset 0 -2px 0 rgba(254,204,1,0.25)' }}>s.</div>
           <div>
             <div style={{ fontWeight:700, fontSize:14, color:C.text }}>WMS Intelligence</div>
             <div style={{ color:C.textMuted, fontSize:11 }}>
@@ -831,7 +831,7 @@ export default function Home() {
                   </div>
                 )
               })()}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(5, 1fr)', gap:10, marginBottom:24 }}>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? 8 : 10, marginBottom:24 }}>
                 {stats.map(s => (
                   <div key={s.label} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
                     <div style={{ fontSize:11, color:C.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>{s.label}</div>
@@ -977,7 +977,7 @@ export default function Home() {
         {tab === 'db' && !selected && (
           <div>
             {/* Stat cards */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:20 }}>
+            <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap:12, marginBottom:20 }}>
               {stats.map(s => {
                 const active =
                 (s.filter === 'news' && tab === 'news') ||
@@ -1355,7 +1355,7 @@ export default function Home() {
             <div style={{ flex:1, overflowY:'auto', padding:20, display:'flex', flexDirection:'column', gap:14 }}>
               {messages.map((m, i) => (
                 <div key={i} style={{ display:'flex', justifyContent:m.role==='user'?'flex-end':'flex-start', gap:10 }}>
-                  {m.role==='assistant' && <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, marginTop:2 }}></div>}
+                  {m.role==='assistant' && <div style={{ width:30, height:30, borderRadius:8, background:'#0B1C37', boxShadow:'inset 0 -2px 0 rgba(254,204,1,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, marginTop:2 }}></div>}
                   {m.role === 'user' ? (
                     <div style={{ maxWidth:'72%', borderRadius:14, padding:'10px 16px', fontSize:14, lineHeight:1.65, whiteSpace:'pre-wrap', background:'linear-gradient(135deg,#2563eb,#1d4ed8)', color:'#fff', border:'none' }}>
                       {m.content}
@@ -1368,7 +1368,7 @@ export default function Home() {
               ))}
               {loading && (
                 <div style={{ display:'flex', gap:10 }}>
-                  <div style={{ width:30, height:30, borderRadius:8, background:'linear-gradient(135deg,#2563eb,#7c3aed)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}></div>
+                  <div style={{ width:30, height:30, borderRadius:8, background:'#0B1C37', boxShadow:'inset 0 -2px 0 rgba(254,204,1,0.25)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14 }}></div>
                   <div style={{ background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:14, padding:'12px 16px', display:'flex', gap:6, alignItems:'center' }}>
                     {[0,1,2].map(i => <div key={i} style={{ width:7, height:7, borderRadius:'50%', background:C.blue, animation:`blink 1.2s ${i*0.2}s infinite` }}></div>)}
                   </div>
@@ -1405,7 +1405,7 @@ export default function Home() {
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
               <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>Add Company & WMS Entry</h2>
               <p style={{ margin:'0 0 24px', fontSize:13, color:C.textSub }}>Add a new company and their WMS system to the intelligence database.</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:14 }}>
                 {([['Company Name *','name','e.g. ASOS'],['Industry','industry','e.g. Fashion Retail'],['Country','country','e.g. United Kingdom'],['Region','region','e.g. EMEA']] as [string,string,string][]).map(([label,field,ph])=>(
                   <div key={field}>
                     <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>{label}</label>
@@ -1415,7 +1415,7 @@ export default function Home() {
                 ))}
               </div>
               <div style={{ height:1, background:C.border, margin:'4px 0 18px' }}/>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:14 }}>
                 {([['WMS System *','wms_system','e.g. Blue Yonder Dispatcher'],['Vendor','vendor','e.g. Blue Yonder'],['Version','version','e.g. Blue Yonder Dispatcher'],['Site / Hub','site_name','e.g. UK DC']] as [string,string,string][]).map(([label,field,ph])=>(
                   <div key={field}>
                     <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>{label}</label>
@@ -1447,7 +1447,7 @@ export default function Home() {
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
               <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>Bulk Add Companies</h2>
               <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Paste a list of company names — one per line. Each is added with WMS = Unknown and queued for auto-research.</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:14 }}>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Industry (applies to all)</label>
                   <input value={bulkIndustry} onChange={e => setBulkIndustry(e.target.value)} placeholder="e.g. 3PL" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
@@ -1468,7 +1468,7 @@ export default function Home() {
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
               <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>Discover New Companies</h2>
               <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Tell Claude what kind of company you're prospecting and it'll search the web for fresh, unduplicated targets — with hiring-signal flags.</p>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:14 }}>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Industry / vertical</label>
                   <input value={suggestIndustry} onChange={e => setSuggestIndustry(e.target.value)} placeholder="3PL, Retail, Supermarket, Pharma, …" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
