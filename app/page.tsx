@@ -177,6 +177,27 @@ export default function Home() {
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'dashboard'|'map'|'db'|'chat'|'add'|'news'>('dashboard')
+
+  function gotoTab(next: 'dashboard'|'map'|'db'|'chat'|'add'|'news') {
+    setTab(next)
+    if (typeof window !== 'undefined') {
+      const targetHash = '#/' + next
+      if (window.location.hash !== targetHash) window.location.hash = targetHash
+    }
+  }
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const validTabs = ['dashboard','map','db','chat','add','news']
+    const sync = () => {
+      const h = window.location.hash.replace(/^#\/?/, '')
+      const slug = h.split('/')[0]
+      if (validTabs.includes(slug)) setTab(slug as any)
+    }
+    sync()
+    window.addEventListener('hashchange', sync)
+    return () => window.removeEventListener('hashchange', sync)
+  }, [])
   const [mapWmsFilter, setMapWmsFilter] = useState('')
   const [mapCountryFilter, setMapCountryFilter] = useState('')
   const [map3plFilter, setMap3plFilter] = useState('')
@@ -332,12 +353,12 @@ export default function Home() {
       if (now - buf.ts > 1500) buf.val = ''
       buf.ts = now
       buf.val += e.key
-      if (buf.val === 'gd') { setTab('dashboard'); setSelected(null); buf.val = ''; return }
-      if (buf.val === 'gm') { setTab('map'); setSelected(null); buf.val = ''; return }
-      if (buf.val === 'gb') { setTab('db'); setSelected(null); buf.val = ''; return }
-      if (buf.val === 'ga') { setTab('chat'); setSelected(null); buf.val = ''; return }
-      if (buf.val === 'gn') { setTab('news'); setSelected(null); buf.val = ''; return }
-      if (buf.val === 'g+') { setTab('add'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'gd') { gotoTab('dashboard'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'gm') { gotoTab('map'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'gb') { gotoTab('db'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'ga') { gotoTab('chat'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'gn') { gotoTab('news'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'g+') { gotoTab('add'); setSelected(null); buf.val = ''; return }
     }
     document.addEventListener('keydown', onKey)
     return () => { document.removeEventListener('keydown', onKey); if (helpTimer) clearTimeout(helpTimer) }
@@ -606,10 +627,10 @@ export default function Home() {
 
   function handleStatClick(s: typeof stats[0]) {
     setSelected(null)
-    if (s.filter === 'news') { setTab('news'); return }
-    if (s.filter === 'All') { setFilterVendor('All'); setSearch(''); setTab('db'); return }
+    if (s.filter === 'news') { gotoTab('news'); return }
+    if (s.filter === 'All') { setFilterVendor('All'); setSearch(''); gotoTab('db'); return }
     setFilterVendor(prev => prev === s.filter ? 'All' : s.filter)
-    setTab('db')
+    gotoTab('db')
   }
 
   async function send() {
@@ -728,7 +749,7 @@ export default function Home() {
             ['news',`News${allNews.length > 0 ? ` (${allNews.length})` : ''}`, Newspaper],
             ['add','Add Entry', Plus],
           ] as [typeof tab, string, any][]).map(([t, label, Icon]) => (
-            <button key={t} onClick={() => { setTab(t); setSelected(null) }}
+            <button key={t} onClick={() => { gotoTab(t); setSelected(null) }}
               style={{ padding:'7px 16px', borderRadius:8, fontSize:13, cursor:'pointer', border:'none',
                 background: tab===t ? C.blueLight : 'transparent',
                 color: tab===t ? C.blue : C.textSub,
@@ -829,7 +850,7 @@ export default function Home() {
               ) : (
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:10, marginBottom:24 }}>
                   {hotLeads.slice(0, 12).map((n: any) => (
-                    <div key={n.id} onClick={() => { setSelected(n._company); setTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', cursor:'pointer', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
+                    <div key={n.id} onClick={() => { setSelected(n._company); gotoTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', cursor:'pointer', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
                         {signalBadge(n.signal_type)}
                         <span style={{ fontSize:11, color:C.textMuted, marginLeft:'auto' }}>{timeAgo(n.published_at || n.created_at)}</span>
@@ -871,11 +892,11 @@ export default function Home() {
                 <Newspaper size={16} color={C.blue} />
                 <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Latest Intelligence</h3>
                 <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
-                <button onClick={() => setTab('news')} style={{ background:'transparent', border:'none', fontSize:11, color:C.blue, fontWeight:600, cursor:'pointer' }}>View all →</button>
+                <button onClick={() => gotoTab('news')} style={{ background:'transparent', border:'none', fontSize:11, color:C.blue, fontWeight:600, cursor:'pointer' }}>View all →</button>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {sortedNews.slice(0, 5).map((n: any) => (
-                  <div key={n.id} onClick={() => { setSelected(n._company); setTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 14px', cursor:'pointer', display:'flex', alignItems:'center', gap:10 }}>
+                  <div key={n.id} onClick={() => { setSelected(n._company); gotoTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 14px', cursor:'pointer', display:'flex', alignItems:'center', gap:10 }}>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:2 }}>{n.title}</div>
                       <div style={{ fontSize:11, color:C.textMuted }}><span style={{ color:C.blue, fontWeight:500 }}>{n._company.name}</span> · {timeAgo(n.published_at || n.created_at)}</div>
@@ -932,7 +953,7 @@ export default function Home() {
                   return true
                 })}
                 totalCount={companies.length}
-                onSelect={(companyId: string) => { const co = companies.find((x: any) => x.id === companyId); if (co) { setSelected(co); setTab('db') } }}
+                onSelect={(companyId: string) => { const co = companies.find((x: any) => x.id === companyId); if (co) { setSelected(co); gotoTab('db') } }}
               />
             </div>
           </div>
@@ -965,7 +986,7 @@ export default function Home() {
             <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:6, marginBottom:12 }}>
               {savedViews.map(v => (
                 <span key={v.id} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 4px 4px 10px', borderRadius:99, background:C.surfaceAlt, border:`1px solid ${C.border}`, fontSize:12, color:C.textSub }}>
-                  <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || ''); setSelected(null); setTab('db') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
+                  <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || ''); setSelected(null); gotoTab('db') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
                   <button onClick={() => { if(confirm('Delete saved view "' + v.name + '"?')) setSavedViews(prev => prev.filter(p => p.id !== v.id)) }}
                     style={{ display:'flex', alignItems:'center', justifyContent:'center', width:18, height:18, padding:0, border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', borderRadius:99 }}>
                     <X size={11} />
@@ -1101,7 +1122,7 @@ export default function Home() {
                     style={{ padding:'8px 16px', borderRadius:8, background:researching[selected.id] ? C.grayLight : C.surfaceAlt, color: researching[selected.id] ? C.textMuted : C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:500, cursor: researching[selected.id] ? 'default' : 'pointer', opacity: researching[selected.id] ? 0.6 : 1 }}>
                     {researching[selected.id] ? 'Researching...' : selected.wms_entries?.some((w:any) => w.wms_system === 'Unknown') ? 'Research WMS' : 'Check for news'}
                   </button>
-                  <button onClick={() => { setInput(`Tell me everything about ${selected.name}'s WMS setup, any recent news, and whether our records are current.`); setTab('chat') }}
+                  <button onClick={() => { setInput(`Tell me everything about ${selected.name}'s WMS setup, any recent news, and whether our records are current.`); gotoTab('chat') }}
                     style={{ padding:'8px 18px', borderRadius:8, background:C.blue, color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>Ask AI
                   </button>
                   <button onClick={() => generateBrief(selected)}
@@ -1267,7 +1288,7 @@ export default function Home() {
                   return (
                     <div key={n.id || i} data-kb-row={i}
                       style={{ background: tab==='news' && i===highlightedIndex ? '#FFF8DA' : C.surface, border:`1px solid ${isRecent ? C.blueBorder : C.border}`, borderRadius:12, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', cursor:'pointer', outline: tab==='news' && i===highlightedIndex ? '2px solid #FECC01' : 'none', outlineOffset: tab==='news' && i===highlightedIndex ? '-2px' : 0 }}
-                      onClick={() => { setSelected(company); setTab('db') }}>
+                      onClick={() => { setSelected(company); gotoTab('db') }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
                         <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                           {isRecent && <span style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:20, padding:'2px 8px', fontSize:10, fontWeight:700 }}>NEW</span>}
