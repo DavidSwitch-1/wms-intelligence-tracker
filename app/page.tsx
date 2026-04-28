@@ -1,7 +1,11 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck } from 'lucide-react'
+
+import dynamic from 'next/dynamic'
+
+const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -171,7 +175,14 @@ export default function Home() {
   ])
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
-  const [tab, setTab] = useState<'dashboard'|'db'|'chat'|'add'|'news'>('dashboard')
+  const [tab, setTab] = useState<'dashboard'|'map'|'db'|'chat'|'add'|'news'>('dashboard')
+  const [mapWmsFilter, setMapWmsFilter] = useState('')
+  const [mapCountryFilter, setMapCountryFilter] = useState('')
+  const [map3plFilter, setMap3plFilter] = useState('')
+  const [filter3pl, setFilter3pl] = useState('')
+  const [newCompany3PL, setNewCompany3PL] = useState('')
+  const [newCompanyIs3PL, setNewCompanyIs3PL] = useState(false)
+  const [newsRecencyFilter, setNewsRecencyFilter] = useState<'12m'|'all'>('12m')
   const [selected, setSelected] = useState<any>(null)
   const [form, setForm]       = useState({ name:'', industry:'', country:'', region:'', wms_system:'', vendor:'', version:'', site_name:'', notes:'' })
   const [saving, setSaving]   = useState(false)
@@ -216,7 +227,7 @@ export default function Home() {
   const [lookalikeData, setLookalikeData] = useState<any[]>([])
   const [lookalikeError, setLookalikeError] = useState('')
   const [lookalikeSource, setLookalikeSource] = useState<any>(null)
-  const [savedViews, setSavedViews] = useState<{id:string, name:string, filters:{industry?:string, country?:string, wms?:string, signal?:string, query?:string}}[]>([])
+  const [savedViews, setSavedViews] = useState<{id:string, name:string, filters:{industry?:string, country?:string, wms?:string, signal?:string, query?:string, filter3pl?:string}}[]>([])
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
   const keySeqRef = useRef<{val:string, ts:number}>({val:'', ts:0})
@@ -321,6 +332,7 @@ export default function Home() {
       buf.ts = now
       buf.val += e.key
       if (buf.val === 'gd') { setTab('dashboard'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'gm') { setTab('map'); setSelected(null); buf.val = ''; return }
       if (buf.val === 'gb') { setTab('db'); setSelected(null); buf.val = ''; return }
       if (buf.val === 'ga') { setTab('chat'); setSelected(null); buf.val = ''; return }
       if (buf.val === 'gn') { setTab('news'); setSelected(null); buf.val = ''; return }
@@ -578,6 +590,10 @@ export default function Home() {
       matchVendor = c.wms_entries?.some((w: any) => w.vendor?.includes(filterVendor))
     }
     return matchSearch && matchVendor
+  }).filter((c: any) => {
+    if (filter3pl === 'has' && !c.third_party_logistics) return false
+    if (filter3pl === 'is' && !c.is_3pl) return false
+    return true
   })
 
   const stats = [
@@ -638,7 +654,7 @@ export default function Home() {
     if (!form.name || !form.wms_system) return
     setSaving(true)
     const { data: co } = await supabase.from('companies')
-      .insert({ name:form.name, industry:form.industry, country:form.country, region:form.region, notes:form.notes })
+      .insert({ name:form.name, industry:form.industry, country:form.country, region:form.region, notes:form.notes, third_party_logistics: newCompany3PL || null, is_3pl: newCompanyIs3PL })
       .select().single()
     if (co) await supabase.from('wms_entries').insert({
       company_id:co.id, wms_system:form.wms_system, vendor:form.vendor,
@@ -646,6 +662,8 @@ export default function Home() {
     })
     setSaving(false); setSaved(true)
     setForm({ name:'', industry:'', country:'', region:'', wms_system:'', vendor:'', version:'', site_name:'', notes:'' })
+    setNewCompany3PL('')
+    setNewCompanyIs3PL(false)
     load(); setTimeout(() => setSaved(false), 3000)
   }
 
@@ -656,6 +674,17 @@ export default function Home() {
     if (v?.includes('Oracle')) return C.teal
     return C.gray
   }
+  function newsDateColor(iso: string | null): { bg: string; fg: string; border: string; label: string } {
+    if (!iso) return { bg: C.surfaceMuted, fg: C.textMuted, border: C.border, label: 'no date' }
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return { bg: C.surfaceMuted, fg: C.textMuted, border: C.border, label: 'no date' }
+    const days = (Date.now() - d.getTime()) / 86400000
+    const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    if (days < 90) return { bg: '#E6F4EA', fg: '#1B5E20', border: '#A5D6A7', label }
+    if (days < 365) return { bg: C.surfaceAlt, fg: C.textSub, border: C.border, label }
+    return { bg: C.surfaceMuted, fg: C.textMuted, border: C.border, label: label + ' · stale' }
+  }
+
   function vendorBg(v: string) {
     if (v?.includes('Manhattan')) return C.purpleLight
     if (v?.includes('Blue Yonder')) return C.blueLight
@@ -692,6 +721,7 @@ export default function Home() {
         <nav style={{ display:'flex', gap:2 }}>
           {([
             ['dashboard','Dashboard', LayoutDashboard],
+            ['map','Map',MapIcon],
             ['db','Database', DatabaseIcon],
             ['chat','AI Assistant', Bot],
             ['news',`News${allNews.length > 0 ? ` (${allNews.length})` : ''}`, Newspaper],
@@ -860,6 +890,52 @@ export default function Home() {
             </div>
           )
         })()}
+        {tab === 'map' && (
+          <div style={{ padding: 24 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 16 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.text }}>Map view</h2>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: C.textMuted }}>
+                  Showing {companies.filter((c: any) => c.latitude && c.longitude).length} of {companies.length} companies. Companies without a known location are hidden until the next geocode pass.
+                </p>
+              </div>
+              <div style={{ display:'flex', gap: 8 }}>
+                <select value={mapWmsFilter} onChange={e=>setMapWmsFilter(e.target.value)} style={{ padding:'6px 10px', borderRadius:8, border:`1px solid ${C.border}`, fontSize:12 }}>
+                  <option value="">All WMS</option>
+                  <option value="Manhattan">Manhattan</option>
+                  <option value="Blue Yonder">Blue Yonder</option>
+                  <option value="Körber">Körber</option>
+                  <option value="SAP">SAP</option>
+                  <option value="Other">Other</option>
+                  <option value="Unknown">Unknown</option>
+                </select>
+                <select value={mapCountryFilter} onChange={e=>setMapCountryFilter(e.target.value)} style={{ padding:'6px 10px', borderRadius:8, border:`1px solid ${C.border}`, fontSize:12 }}>
+                  <option value="">All countries</option>
+                  {Array.from(new Set(companies.map((c: any)=>c.country).filter(Boolean))).sort().map((co: any) => <option key={co as string} value={co as string}>{co as string}</option>)}
+                </select>
+                <select value={map3plFilter} onChange={e=>setMap3plFilter(e.target.value)} style={{ padding:'6px 10px', borderRadius:8, border:`1px solid ${C.border}`, fontSize:12 }}>
+                  <option value="">All companies</option>
+                  <option value="has">Has 3PL</option>
+                  <option value="is">Is 3PL provider</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ height: 'calc(100vh - 220px)', minHeight: 500, borderRadius: 12, overflow: 'hidden', border: `1px solid ${C.border}` }}>
+              <MapView
+                companies={companies.filter((c: any) => {
+                  if (!c.latitude || !c.longitude) return false
+                  if (mapWmsFilter && c.wms_system !== mapWmsFilter && !(mapWmsFilter === 'Unknown' && (!c.wms_system || c.wms_system === 'Unknown'))) return false
+                  if (mapCountryFilter && c.country !== mapCountryFilter) return false
+                  if (map3plFilter === 'has' && !c.third_party_logistics) return false
+                  if (map3plFilter === 'is' && !c.is_3pl) return false
+                  return true
+                })}
+                onCompanyClick={(co: any) => { setSelected(co); setTab('db') }}
+              />
+            </div>
+          </div>
+        )}
+
         {tab === 'db' && !selected && (
           <div>
             {/* Stat cards */}
@@ -914,6 +990,8 @@ export default function Home() {
                 {['All','Blue Yonder','Manhattan Associates','SAP','Oracle','Unknown','In-House'].map(v =>
                   <option key={v} value={v}>{v}</option>)}
               </select>
+              <button onClick={()=>setFilter3pl(filter3pl === 'has' ? '' : 'has')} style={{ padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filter3pl === 'has' ? C.yellowLight : C.surfaceAlt, color: filter3pl === 'has' ? C.text : C.textSub, border:`1px solid ${filter3pl === 'has' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Has 3PL</button>
+              <button onClick={()=>setFilter3pl(filter3pl === 'is' ? '' : 'is')} style={{ padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filter3pl === 'is' ? C.yellowLight : C.surfaceAlt, color: filter3pl === 'is' ? C.text : C.textSub, border:`1px solid ${filter3pl === 'is' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Is 3PL</button>
               {(filterVendor !== 'All' || search) && (
                 <button onClick={() => { setFilterVendor('All'); setSearch('') }}
                   style={{ padding:'10px 14px', borderRadius:10, border:`1px solid ${C.border}`, background:C.surface, color:C.textSub, fontSize:13, cursor:'pointer' }}>
@@ -973,6 +1051,11 @@ export default function Home() {
                           {w.version && w.version !== w.wms_system && <span style={{ opacity:0.65, fontSize:11 }}> · {w.version.length > 30 ? w.version.substring(0,30)+'…' : w.version}</span>}
                         </span>
                       ))}
+                      {c.is_3pl && (
+                        <span style={{ marginLeft: 6, padding:'1px 6px', borderRadius: 4, background: C.yellowLight, color: C.text, fontSize: 10, fontWeight: 600, border:`1px solid ${C.yellowBorder}` }}>
+                          3PL
+                        </span>
+                      )}
                     </div>
                     {researchResult && (
                       <div style={{ marginTop:8, fontSize:12, color:C.blue, background:C.blueLight, borderRadius:6, padding:'4px 10px' }}>{researchResult}
@@ -999,8 +1082,16 @@ export default function Home() {
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
                 <div>
-                  <h2 style={{ margin:0, fontSize:22, fontWeight:700, color:C.text }}>{selected.name}</h2>
+                  <h2 style={{ margin:0, fontSize:22, fontWeight:700, color:C.text }}>{selected.name}{selected.is_3pl && (
+                    <span style={{ marginLeft: 8, padding:'2px 8px', borderRadius: 999, background: C.yellowLight, border:`1px solid ${C.yellowBorder}`, color: C.text, fontSize: 11, fontWeight: 600 }}>3PL Provider</span>
+                  )}</h2>
                   <p style={{ margin:'4px 0 0', color:C.textSub, fontSize:14 }}>{[selected.industry, selected.country, selected.region].filter(Boolean).join(' · ')}</p>
+                  {selected.third_party_logistics && (
+                    <div style={{ display:'flex', alignItems:'center', gap: 8, fontSize: 13, color: C.textSub, marginTop: 6 }}>
+                      <Truck size={14} />
+                      <span>3PL: <strong style={{ color: C.text }}>{selected.third_party_logistics}</strong></span>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
                   <button onClick={(e) => { e.stopPropagation(); researchCompany(selected) }}
@@ -1066,7 +1157,7 @@ export default function Home() {
                       <div style={{ fontWeight:600, fontSize:14, color:C.red }}>{n.title}</div>
                       {n.summary && <div style={{ marginTop:4, fontSize:13, color:C.textSub }}>{n.summary}</div>}
                       <div style={{ marginTop:6, fontSize:11, color:C.textMuted }}>
-                        {new Date(n.published_at||n.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}
+                        {(() => { const dc = newsDateColor(n.published_at || n.created_at); return (<span style={{ padding:'2px 8px', borderRadius:6, background:dc.bg, color:dc.fg, border:`1px solid ${dc.border}`, fontSize:11, fontWeight:500 }}>{dc.label}</span>) })()}
                         {n.source && <span style={{ marginLeft:8 }}>· <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" style={{ color:C.blue, textDecoration:'none' }}>Source ↗</a></span>}
                       </div>
                     </div>
@@ -1164,7 +1255,11 @@ export default function Home() {
               </div>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                {allNews.map((n: any, i: number) => {
+                <div style={{ display:'flex', gap: 6, marginBottom: 12 }}>
+                  <button onClick={()=>setNewsRecencyFilter('12m')} style={{ padding:'4px 10px', borderRadius:999, fontSize:12, fontWeight:500, background: newsRecencyFilter==='12m' ? C.yellowLight : C.surfaceAlt, color: newsRecencyFilter==='12m' ? C.text : C.textSub, border:`1px solid ${newsRecencyFilter==='12m' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Last 12 months</button>
+                  <button onClick={()=>setNewsRecencyFilter('all')} style={{ padding:'4px 10px', borderRadius:999, fontSize:12, fontWeight:500, background: newsRecencyFilter==='all' ? C.yellowLight : C.surfaceAlt, color: newsRecencyFilter==='all' ? C.text : C.textSub, border:`1px solid ${newsRecencyFilter==='all' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>All time</button>
+                </div>
+                {allNews.filter((n: any) => { if (n.archived) return false; if (newsRecencyFilter === '12m') { const d = new Date(n.published_at || n.created_at); if (!isNaN(d.getTime()) && (Date.now() - d.getTime()) > 365 * 86400000) return false } return true }).map((n: any, i: number) => {
                   const company = companies.find(c => c.id === n.companyId)
                   const isRecent = new Date(n.published_at||n.created_at).getTime() > Date.now() - 24*60*60*1000
                   return (
@@ -1183,7 +1278,7 @@ export default function Home() {
                           {signalBadge(n.signal_type)}
                         </div>
                         <span style={{ fontSize:11, color:C.textMuted }}>
-                          {new Date(n.published_at||n.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}
+                          {(() => { const dc = newsDateColor(n.published_at || n.created_at); return (<span style={{ padding:'2px 8px', borderRadius:6, background:dc.bg, color:dc.fg, border:`1px solid ${dc.border}`, fontSize:11, fontWeight:500 }}>{dc.label}</span>) })()}
                         </span>
                       </div>
                       {n.proposed_wms_system && n.status !== 'verified' && (
@@ -1288,6 +1383,14 @@ export default function Home() {
                       style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                   </div>
                 ))}
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <label style={{ display:'block', fontSize: 12, color: C.textSub, marginBottom: 4 }}>Third-party logistics provider (optional)</label>
+                <input type="text" value={newCompany3PL || ''} onChange={e=>setNewCompany3PL(e.target.value)} placeholder="e.g. Unipart, Gist, Clipper" style={{ width:'100%', padding:'8px 10px', borderRadius: 8, border:`1px solid ${C.border}`, fontSize: 14 }} />
+              </div>
+              <div style={{ marginTop: 8, marginBottom: 16, display:'flex', alignItems:'center', gap: 8 }}>
+                <input id="is3pl" type="checkbox" checked={newCompanyIs3PL || false} onChange={e=>setNewCompanyIs3PL(e.target.checked)} />
+                <label htmlFor="is3pl" style={{ fontSize: 13, color: C.textSub }}>This company is itself a 3PL provider</label>
               </div>
               <div style={{ marginBottom:20 }}>
                 <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Notes / Intel</label>
