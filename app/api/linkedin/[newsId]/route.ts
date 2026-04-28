@@ -93,9 +93,12 @@ async function handle(newsId: string, opts: { refresh: boolean }) {
     ? String(news.published_at).slice(0, 10)
     : (news.created_at ? String(news.created_at).slice(0, 10) : 'undated')
 
+  const tplLine = company?.third_party_logistics ? `\n3PL provider: ${company.third_party_logistics}` : ''
+  const is3plLine = company?.is_3pl ? `\nIs itself a 3PL: yes` : ''
+
   const ctx = `Company: ${company?.name || 'Unknown'}
 Industry: ${company?.industry || 'Unknown'}
-Country: ${company?.country || 'Unknown'}
+Country: ${company?.country || 'Unknown'}${tplLine}${is3plLine}
 Current WMS:
 ${wmsLines}
 
