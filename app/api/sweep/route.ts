@@ -17,6 +17,16 @@ function isFresh(at: string | null | undefined): boolean {
   return Date.now() - ts < SEVEN_DAYS_MS
 }
 
+function isStale(publishedAt: string | null | undefined): boolean {
+  if (!publishedAt) return false;
+  const d = new Date(publishedAt);
+  if (isNaN(d.getTime())) return false;
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 18);
+  return d < cutoff;
+}
+
+
 // Research a single company for both WMS identity AND recent news/upgrades
 async function researchOne(company: any) {
   const isUnknown = company.wms_entries?.some((w: any) => w.wms_system === 'Unknown')
@@ -24,14 +34,14 @@ async function researchOne(company: any) {
     .map((w: any) => w.wms_system).join(', ')
 
   const prompt = isUnknown
-    ? `What WMS (Warehouse Management System) does ${company.name} use? They are a ${company.industry || ''} company in ${company.country || ''}. Search for press releases, case studies, and job postings mentioning their WMS. Also flag any hiring activity (WMS implementation/admin/supervisor job posts), new DC openings, or M&A.`
-    : `Search for recent news about ${company.name}'s warehouse or supply chain technology. They currently use ${knownWMS}. Look for: WMS upgrades, new warehouse openings, system migrations, technology partnerships, distribution centre announcements, executive hires in ops/IT/supply chain, or active WMS-related job postings in the last 12 months. These are all strong signals for a recruitment firm.`
+    ? `What WMS (Warehouse Management System) does ${company.name} use? They are a ${company.industry || ''} company in ${company.country || ''}. Search for press releases, case studies, and job postings mentioning their WMS. Also flag any hiring activity (WMS implementation/admin/supervisor job posts), new DC openings, or M&A.\n\nIMPORTANT — recency rule: Only return news, signals, or events that have been published within the last 12 months. Do NOT include articles, hiring posts, or announcements older than 12 months even if they are relevant. For each news item you return, include a `published_at` field as an ISO 8601 date string (e.g. "2025-09-14") representing when the article was originally published. If you cannot determine the published date, set `published_at` to null rather than guessing.`
+    : `Search for recent news about ${company.name}'s warehouse or supply chain technology. They currently use ${knownWMS}. Look for: WMS upgrades, new warehouse openings, system migrations, technology partnerships, distribution centre announcements, executive hires in ops/IT/supply chain, or active WMS-related job postings in the last 12 months. These are all strong signals for a recruitment firm.\n\nIMPORTANT — recency rule: Only return news, signals, or events that have been published within the last 12 months. Do NOT include articles, hiring posts, or announcements older than 12 months even if they are relevant. For each news item you return, include a `published_at` field as an ISO 8601 date string (e.g. "2025-09-14") representing when the article was originally published. If you cannot determine the published date, set `published_at` to null rather than guessing.`
 
   const systemPrompt = isUnknown
     ? `You are a WMS intelligence researcher. Find what WMS a company uses. Background: Red Prairie = Blue Yonder Dispatcher, JDA Discrete = Blue Yonder WMS, Manhattan PKMS/WMOS/WMi are legacy. Also note any 3PL provider (e.g. Unipart, GXO, DHL Supply Chain, Wincanton, Gist, Clipper, Yusen, Kuehne+Nagel, XPO, Bleckmann, Geodis) the company outsources warehousing to, and flag if the company itself IS a 3PL operator (runs warehouses for other brands as primary business). Respond ONLY with JSON:
-{"found":true/false,"wms_system":"name or null","vendor":"vendor or null","version":"version or null","confidence":"High/Medium/Low","summary":"one sentence finding","source":"URL or source description","news_title":"short headline or null","news_summary":"brief news summary or null","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none","third_party_logistics":"3PL provider name (e.g. Unipart) or null","is_3pl":true/false}`
+{"found":true/false,"wms_system":"name or null","vendor":"vendor or null","version":"version or null","confidence":"High/Medium/Low","summary":"one sentence finding","source":"URL or source description","news_title":"short headline or null","news_summary":"brief news summary or null","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none","third_party_logistics":"3PL provider name (e.g. Unipart) or null","is_3pl":true/false,"published_at": string | null}`
     : `You are a supply chain intelligence researcher. Find recent news about a company's warehouse or WMS activity. Also note any 3PL provider (e.g. Unipart, GXO, DHL Supply Chain, Wincanton, Gist, Clipper, Yusen, Kuehne+Nagel, XPO, Bleckmann, Geodis) the company outsources warehousing to, and flag if the company itself IS a 3PL operator. Respond ONLY with JSON:
-{"found":true/false,"news_title":"short punchy headline or null","news_summary":"2-3 sentence summary of what you found or null","source":"URL or source description","impact":"High/Medium/Low/Info","wms_change":true/false,"wms_system":"new system if changing, else null","vendor":"new vendor if changing, else null","version":"new version if changing, else null","confidence":"High/Medium/Low","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none","third_party_logistics":"3PL provider name (e.g. Unipart) or null","is_3pl":true/false}`
+{"found":true/false,"news_title":"short punchy headline or null","news_summary":"2-3 sentence summary of what you found or null","source":"URL or source description","impact":"High/Medium/Low/Info","wms_change":true/false,"wms_system":"new system if changing, else null","vendor":"new vendor if changing, else null","version":"new version if changing, else null","confidence":"High/Medium/Low","signal_type":"dc_opening|wms_migration|hiring|ma|growth|exec_hire|none","third_party_logistics":"3PL provider name (e.g. Unipart) or null","is_3pl":true/false,"published_at": string | null}`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -357,6 +367,7 @@ export async function POST(req: NextRequest) {
         .limit(1)
 
       if (!existing || existing.length === 0) {
+        if (isStale(item.published_at)) { console.warn('Dropping stale news', { company, headline: item.headline, published_at: item.published_at }); continue; }
         const { data: insertedRows } = await supabase.from('news_updates').insert({
           company_id: company.id,
           title: newsTitle,
@@ -367,7 +378,7 @@ export async function POST(req: NextRequest) {
           proposed_wms_system: !isUnknown && result.wms_change && result.wms_system ? result.wms_system : null,
           proposed_vendor: !isUnknown && result.wms_change && result.vendor ? result.vendor : null,
           proposed_version: !isUnknown && result.wms_change && result.version ? result.version : null,
-          published_at: new Date().toISOString()
+          published_at: item.published_at ?? null
         }).select('id')
         if (insertedRows && insertedRows.length > 0 && insertedRows[0].id) {
           insertedNewsIds.push(insertedRows[0].id as string)
