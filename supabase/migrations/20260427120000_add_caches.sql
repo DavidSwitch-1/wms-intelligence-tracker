@@ -17,3 +17,20 @@ alter table public.news_updates
 create index if not exists news_updates_created_at_idx on public.news_updates (created_at desc);
 create index if not exists news_updates_published_at_idx on public.news_updates (published_at desc);
 create index if not exists companies_last_researched_at_idx on public.companies (last_researched_at desc);
+
+-- 3PL relationship tracking (added 2026-04-28).
+-- third_party_logistics: name of the 3PL provider this company outsources warehousing to (e.g. "Unipart").
+-- is_3pl: true when this company IS itself a 3PL provider operating warehouses for other brands.
+alter table public.companies add column if not exists third_party_logistics text;
+alter table public.companies add column if not exists is_3pl boolean not null default false;
+create index if not exists companies_is_3pl_idx on public.companies(is_3pl) where is_3pl;
+create index if not exists companies_third_party_logistics_idx on public.companies(third_party_logistics) where third_party_logistics is not null;
+
+-- Geocoding columns for the Map view (added 2026-04-28).
+-- Populated by /api/geocode (Nominatim, daily cron). geocoded_at is stamped
+-- on every attempt so failed geocodes don't get retried until 6 months pass.
+alter table public.companies add column if not exists latitude double precision;
+alter table public.companies add column if not exists longitude double precision;
+alter table public.companies add column if not exists hq_city text;
+alter table public.companies add column if not exists geocoded_at timestamptz;
+create index if not exists companies_lat_lng_idx on public.companies(latitude, longitude) where latitude is not null and longitude is not null;
