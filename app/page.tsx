@@ -7,6 +7,8 @@ import dynamic from 'next/dynamic'
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 import { renderMarkdown } from '@/lib/markdown'
+import { useViewport, DS } from '@/lib/design'
+import { Button, Pill, Card, Modal, Input as DSInput, Skeleton, EmptyState, VendorPill, PrimitivesGlobalStyles, PALETTE } from '@/components/ui/primitives'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -177,6 +179,7 @@ export default function Home() {
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<'dashboard'|'map'|'db'|'chat'|'add'|'news'>('dashboard')
+  const { isMobile, isTablet, isDesktop, width: __vpWidth__ } = useViewport()
 
   function gotoTab(next: 'dashboard'|'map'|'db'|'chat'|'add'|'news') {
     setTab(next)
@@ -726,7 +729,7 @@ export default function Home() {
   const researchingCount = Object.values(researching).filter(Boolean).length
 
   return (
-    <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'inherit' }}>
+    <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'inherit', paddingBottom: isMobile ? 76 : 0, transition:'padding 200ms cubic-bezier(0.4,0,0.2,1)' }}>
 
       {/* ── Header ── */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding:'0 28px', display:'flex', alignItems:'center', justifyContent:'space-between', height:56, position:'sticky', top:0, zIndex:50, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
@@ -740,7 +743,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <nav style={{ display:'flex', gap:2 }}>
+        <nav style={{ display: isMobile ? 'none' : 'flex', gap:2 }}>
           {([
             ['dashboard','Dashboard', LayoutDashboard],
             ['map','Map',MapIcon],
@@ -1788,6 +1791,71 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* ── Mobile-only bottom tab bar ── */}
+      {isMobile && (
+        <nav role="tablist" aria-label="Main navigation" style={{
+          position: 'fixed',
+          left: 0, right: 0, bottom: 0,
+          height: 60,
+          background: 'rgba(255,255,255,0.96)',
+          backdropFilter: 'blur(12px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(12px) saturate(180%)',
+          borderTop: '1px solid '+PALETTE.border,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, 1fr)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          zIndex: 5500,
+        }}>
+          {([
+            ['dashboard','Home', LayoutDashboard],
+            ['map','Map', MapIcon],
+            ['db','Data', DatabaseIcon],
+            ['news','News', Newspaper],
+            ['add','Add', Plus],
+          ] as ['dashboard'|'map'|'db'|'chat'|'add'|'news', string, any][]).map(([t, label, Icon]) => {
+            const active = tab === t;
+            return (
+              <button
+                key={t}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setTab(t)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 3,
+                  padding: 0,
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: active ? PALETTE.navy : PALETTE.inkSoft,
+                  minHeight: 44,
+                  position: 'relative',
+                  transition: 'color 120ms cubic-bezier(0.4,0,0.2,1)',
+                }}
+              >
+                {active && (
+                  <span style={{
+                    position: 'absolute',
+                    top: 0, left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: 32, height: 3,
+                    background: PALETTE.yellow,
+                    borderRadius: '0 0 3px 3px',
+                  }} />
+                )}
+                <Icon size={20} strokeWidth={active ? 2.4 : 2} />
+                <span style={{ fontSize: 10, fontWeight: active ? 700 : 600, letterSpacing: 0.2 }}>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
+
+      <PrimitivesGlobalStyles />
     </div>
   )
 }
