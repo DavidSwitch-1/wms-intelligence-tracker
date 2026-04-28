@@ -34,3 +34,9 @@ alter table public.companies add column if not exists longitude double precision
 alter table public.companies add column if not exists hq_city text;
 alter table public.companies add column if not exists geocoded_at timestamptz;
 create index if not exists companies_lat_lng_idx on public.companies(latitude, longitude) where latitude is not null and longitude is not null;
+
+-- News freshness: published_at column (idempotent) + archived flag
+alter table public.news_updates add column if not exists published_at timestamptz;
+alter table public.news_updates add column if not exists archived boolean not null default false;
+create index if not exists news_updates_published_at_idx on public.news_updates(published_at desc) where not archived;
+create index if not exists news_updates_archived_idx on public.news_updates(archived) where archived;
