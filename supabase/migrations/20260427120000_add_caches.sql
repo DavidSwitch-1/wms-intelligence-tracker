@@ -40,3 +40,14 @@ alter table public.news_updates add column if not exists published_at timestampt
 alter table public.news_updates add column if not exists archived boolean not null default false;
 create index if not exists news_updates_published_at_idx on public.news_updates(published_at desc) where not archived;
 create index if not exists news_updates_archived_idx on public.news_updates(archived) where archived;
+
+-- Auto-discovery: track companies added by the sweep's discovery pass (added 2026-04-29).
+-- The nightly sweep researches existing companies AND proactively discovers new ones via
+-- Claude + web search. New rows are inserted with auto_discovered=true and pending status;
+-- David verifies/dismisses them from the Dashboard "Recently discovered" strip.
+alter table public.companies add column if not exists auto_discovered boolean not null default false;
+alter table public.companies add column if not exists discovered_at timestamptz;
+alter table public.companies add column if not exists discovery_status text default 'pending' check (discovery_status in ('pending', 'verified', 'dismissed'));
+
+create index if not exists companies_auto_discovered_idx on public.companies(auto_discovered, discovery_status) where auto_discovered;
+create index if not exists companies_discovered_at_idx on public.companies(discovered_at desc) where auto_discovered;
