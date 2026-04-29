@@ -623,8 +623,8 @@ export default function Home() {
 
   const stats = [
     { label:'Total Companies', value:companies.length, color:C.blue, bg:C.blueLight, border:C.blueBorder, filter:'All' },
-    { label:'Manhattan', value:companies.filter(c=>c.wms_entries?.some((w:any)=>w.vendor?.includes('Manhattan'))).length, color:C.purple, bg:C.purpleLight, border:C.purpleBorder, filter:'Manhattan Associates' },
-    { label:'Blue Yonder', value:companies.filter(c=>c.wms_entries?.some((w:any)=>w.vendor?.includes('Blue Yonder'))).length, color:C.green, bg:C.greenLight, border:C.greenBorder, filter:'Blue Yonder' },
+    { label:'Manhattan', value:companies.filter(c=>c.wms_entries?.some((w:any)=>w.vendor?.includes('Manhattan'))).length, color:C.red, bg:C.redLight, border:C.redBorder, filter:'Manhattan Associates' },
+    { label:'Blue Yonder', value:companies.filter(c=>c.wms_entries?.some((w:any)=>w.vendor?.includes('Blue Yonder'))).length, color:C.blue, bg:C.blueLight, border:C.blueBorder, filter:'Blue Yonder' },
     { label:'News & Updates', value:allNews.length, color:C.red, bg:C.redLight, border:C.redBorder, filter:'news' },
   ]
 
@@ -693,7 +693,7 @@ export default function Home() {
   }
 
   function vendorColor(v: string) {
-    if (v?.includes('Manhattan')) return C.purple
+    if (v?.includes('Manhattan')) return C.red
     if (v?.includes('Blue Yonder')) return C.blue
     if (v?.includes('SAP')) return C.amber
     if (v?.includes('Oracle')) return C.teal
@@ -711,14 +711,14 @@ export default function Home() {
   }
 
   function vendorBg(v: string) {
-    if (v?.includes('Manhattan')) return C.purpleLight
+    if (v?.includes('Manhattan')) return C.redLight
     if (v?.includes('Blue Yonder')) return C.blueLight
     if (v?.includes('SAP')) return C.amberLight
     if (v?.includes('Oracle')) return C.tealLight
     return C.grayLight
   }
   function vendorBorder(v: string) {
-    if (v?.includes('Manhattan')) return C.purpleBorder
+    if (v?.includes('Manhattan')) return C.redBorder
     if (v?.includes('Blue Yonder')) return C.blueBorder
     if (v?.includes('SAP')) return C.amberBorder
     if (v?.includes('Oracle')) return C.tealBorder
@@ -793,8 +793,8 @@ export default function Home() {
           const totalUnknown = companies.filter((c: any) => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown')).length
           const stats = [
             { label: 'Tracked', value: companies.length, accent: C.text },
-            { label: 'Manhattan', value: totalManhattan, accent: C.purple },
-            { label: 'Blue Yonder', value: totalBlueYonder, accent: C.green },
+            { label: 'Manhattan', value: totalManhattan, accent: C.red },
+            { label: 'Blue Yonder', value: totalBlueYonder, accent: C.blue },
             { label: 'Unknown', value: totalUnknown, accent: C.yellowBorder },
             { label: 'News last 7d', value: recentNews, accent: C.blue }
           ]
