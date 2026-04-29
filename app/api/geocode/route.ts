@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Geocode pending companies via OpenStreetMap Nominatim.
 //
-// Auth: Bearer ${process.env.CRON_SECRET} â same pattern as /api/cron.
+// Auth: Bearer ${process.env.CRON_SECRET} Ã¢ÂÂ same pattern as /api/cron.
 //
 // Behaviour: pulls up to 50 companies that have either no latitude
 // or were last geocoded > 6 months ago, then queries Nominatim with
@@ -38,28 +38,36 @@ function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function geocodeOne(name: string, country: string | null): Promise<{
-  lat: number; lng: number; city: string | null
+async function geocodeOne(name: string, country: string | null, hqCity: string | null): Promise<{
+  lat: number; lng: number; city: string | null; matched_query: string
 } | null> {
-  const q = encodeURIComponent(`${name} headquarters ${country || ''}`.trim())
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${q}`
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': NOMINATIM_USER_AGENT,
-      'Accept': 'application/json',
-    },
-    cache: 'no-store',
-  })
-  if (!res.ok) return null
-  const arr = await res.json()
-  if (!Array.isArray(arr) || arr.length === 0) return null
-  const hit = arr[0]
-  const lat = parseFloat(hit.lat)
-  const lng = parseFloat(hit.lon)
-  if (Number.isNaN(lat) || Number.isNaN(lng)) return null
-  const addr = hit.address || {}
-  const city = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.county || null
-  return { lat, lng, city }
+  const queries: string[] = [
+    hqCity && country ? `${name}, ${hqCity}, ${country}` : null,
+    country ? `${name}, ${country}` : null,
+    name,
+  ].filter(Boolean) as string[]
+
+  for (let qi = 0; qi < queries.length; qi++) {
+    if (qi > 0) await sleep(SPACING_MS)
+    const q = queries[qi]
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(q)}`
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': NOMINATIM_USER_AGENT,
+      },
+    })
+    if (!res.ok) continue
+    const arr = await res.json()
+    if (!Array.isArray(arr) || arr.length === 0) continue
+    const hit = arr[0]
+    const lat = parseFloat(hit.lat)
+    const lng = parseFloat(hit.lon)
+    if (Number.isNaN(lat) || Number.isNaN(lng)) continue
+    const addr = hit.address || {}
+    const city = addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || addr.county || null
+    return { lat, lng, city, matched_query: q }
+  }
+  return null
 }
 
 export async function POST(req: NextRequest) {
@@ -71,7 +79,7 @@ export async function GET(req: NextRequest) {
 }
 
 async function run(req: NextRequest) {
-  // Auth â Bearer CRON_SECRET, same pattern as /api/cron.
+  // Auth Ã¢ÂÂ Bearer CRON_SECRET, same pattern as /api/cron.
   const auth = req.headers.get('authorization') || ''
   const expected = `Bearer ${process.env.CRON_SECRET || ''}`
   if (!process.env.CRON_SECRET || auth !== expected) {
@@ -82,7 +90,7 @@ async function run(req: NextRequest) {
   const sixMonthsAgo = new Date(Date.now() - SIX_MONTHS_MS).toISOString()
   const { data: candidates, error } = await supabase
     .from('companies')
-    .select('id, name, country, latitude, geocoded_at')
+    .select('id, name, country, hq_city, latitude, geocoded_at')
     .or(`latitude.is.null,geocoded_at.lt.${sixMonthsAgo}`)
     .order('geocoded_at', { ascending: true, nullsFirst: true })
     .limit(BATCH_SIZE)
@@ -101,7 +109,12 @@ async function run(req: NextRequest) {
     const c = targets[i] as any
     if (i > 0) await sleep(SPACING_MS)
     try {
-      const hit = await geocodeOne(c.name, c.country)
+      const hit = await geocodeOne(c.name, c.country, c.hq_city ?? null)
+      if (hit) {
+        console.log(`[geocode] hit: ${c.name} -> ${hit.matched_query}`)
+      } else {
+        console.log(`[geocode] miss: ${c.name} (final attempted: ${c.name})`)
+      }
       if (!hit) {
         failed++
         failures.push({ id: c.id, name: c.name, reason: 'no result' })
