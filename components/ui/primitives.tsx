@@ -294,6 +294,7 @@ export function Modal({
   children,
   footer,
   hideClose,
+  bare,
 }: {
   isOpen: boolean
   onClose: () => void
@@ -302,6 +303,7 @@ export function Modal({
   children: ReactNode
   footer?: ReactNode
   hideClose?: boolean
+  bare?: boolean
 }) {
   const { isMobile } = useViewport()
   const dialogRef = useRef<HTMLDivElement>(null)
@@ -361,6 +363,24 @@ export function Modal({
         flexDirection: 'column',
         animation: 'wmsslide 200ms cubic-bezier(0.4,0,0.2,1)',
       }
+  if (bare) {
+    return (
+      <div
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(11,28,55,0.5)',
+          backdropFilter: 'blur(2px)', zIndex: 5000,
+          display: 'flex',
+          alignItems: sheetMode ? 'flex-end' : 'center',
+          justifyContent: 'center',
+          padding: sheetMode ? 0 : 24,
+          animation: 'wmsfade 200ms cubic-bezier(0.4,0,0.2,1)',
+        }}
+        onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}
+      >
+        {children}
+      </div>
+    )
+  }
   return (
     <div
       style={overlay}

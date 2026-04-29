@@ -1533,9 +1533,7 @@ export default function Home() {
       `}</style>
       
       {/* ── PRE-PITCH BRIEF MODAL ── */}
-      {showBrief && (
-        <div onClick={() => !briefLoading && setShowBrief(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
+      <Modal isOpen={showBrief} onClose={() => !briefLoading && setShowBrief(false)} bare>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 720, width:'100%', maxHeight: isMobile ? '92vh' : '85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
@@ -1591,13 +1589,10 @@ export default function Home() {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        </Modal>
 
       {/* ── INMAIL MODAL ── */}
-      {showInmail && (
-        <div onClick={() => !inmailLoading && setShowInmail(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
+      <Modal isOpen={showInmail} onClose={() => !inmailLoading && setShowInmail(false)} bare>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 640, width:'100%', maxHeight: isMobile ? '92vh' : '85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
@@ -1652,13 +1647,10 @@ export default function Home() {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        </Modal>
 
       {/* ── LOOKALIKE COMPANIES MODAL ── */}
-      {lookalikeOpen && (
-        <div onClick={() => !lookalikeLoading && setLookalikeOpen(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:99, padding: isMobile ? 0 : 20 }}>
+      <Modal isOpen={lookalikeOpen} onClose={() => !lookalikeLoading && setLookalikeOpen(false)} bare>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius: isMobile ? '14px 14px 0 0' : 16, width:'min(640px, 100%)', maxHeight: isMobile ? '92vh' : '80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 20px 50px rgba(11,28,55,0.18)' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#FFFFFF' }}>
@@ -1704,13 +1696,10 @@ export default function Home() {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        </Modal>
 
       {/* ── LINKEDIN POST DRAFTS MODAL ── */}
-      {linkedinModalOpen && (
-        <div onClick={() => !linkedinLoading && setLinkedinModalOpen(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
+      <Modal isOpen={linkedinModalOpen} onClose={() => !linkedinLoading && setLinkedinModalOpen(false)} bare>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 780, width:'100%', maxHeight: isMobile ? '94vh' : '88vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
@@ -1785,8 +1774,7 @@ export default function Home() {
               </Button>
             </div>
           </div>
-        </div>
-      )}
+        </Modal>
 
       {/* SHORTCUTS INDICATOR + HELP PANEL */}
       <div onClick={() => setShortcutsOpen(v => !v)}
