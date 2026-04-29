@@ -1537,7 +1537,7 @@ export default function Home() {
         <div onClick={() => !briefLoading && setShowBrief(false)}
           style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background:C.surface, borderRadius:16, maxWidth:720, width:'100%', maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
+            style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 720, width:'100%', maxHeight: isMobile ? '92vh' : '85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <Sparkles size={18} color="#FECC01" />
@@ -1599,7 +1599,7 @@ export default function Home() {
         <div onClick={() => !inmailLoading && setShowInmail(false)}
           style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background:C.surface, borderRadius:16, maxWidth:640, width:'100%', maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
+            style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 640, width:'100%', maxHeight: isMobile ? '92vh' : '85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <MessageSquare size={18} color="#FECC01" />
@@ -1660,7 +1660,7 @@ export default function Home() {
         <div onClick={() => !lookalikeLoading && setLookalikeOpen(false)}
           style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:99, padding: isMobile ? 0 : 20 }}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, width:'min(640px, 100%)', maxHeight:'80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 20px 50px rgba(11,28,55,0.18)' }}>
+            style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius: isMobile ? '14px 14px 0 0' : 16, width:'min(640px, 100%)', maxHeight: isMobile ? '92vh' : '80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 20px 50px rgba(11,28,55,0.18)' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#FFFFFF' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <Users size={18} color="#FECC01" />
@@ -1712,7 +1712,7 @@ export default function Home() {
         <div onClick={() => !linkedinLoading && setLinkedinModalOpen(false)}
           style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
           <div onClick={(e) => e.stopPropagation()}
-            style={{ background:C.surface, borderRadius:16, maxWidth:780, width:'100%', maxHeight:'88vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
+            style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 780, width:'100%', maxHeight: isMobile ? '94vh' : '88vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <Linkedin size={18} color="#FECC01" />
