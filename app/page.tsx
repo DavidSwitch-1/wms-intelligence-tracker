@@ -1643,12 +1643,13 @@ export default function Home() {
           style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99, padding:20 }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, width:'min(640px, 100%)', maxHeight:'80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 20px 50px rgba(11,28,55,0.18)' }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px 22px', borderBottom:`1px solid ${C.border}` }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#FFFFFF' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <Users size={18} color={C.yellow} />
-                <div style={{ fontSize:15, fontWeight:700, color:C.text }}>Companies similar to {lookalikeSource?.name || ''}</div>
+                <Users size={18} color="#FECC01" />
+                <div style={{ fontSize:15, fontWeight:700, color:'#FFFFFF' }}>Companies similar to {lookalikeSource?.name || ''}</div>
               </div>
-              <button onClick={() => setLookalikeOpen(false)} style={{ border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', display:'flex', alignItems:'center' }}>
+              <button onClick={() => setLookalikeOpen(false)} aria-label="Close"
+                style={{ background:'transparent', border:'none', color:'#fff', cursor:'pointer', padding:6, borderRadius:6, display:'flex', alignItems:'center' }}>
                 <X size={18} />
               </button>
             </div>
