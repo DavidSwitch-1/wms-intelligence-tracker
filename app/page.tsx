@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic'
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 import { renderMarkdown } from '@/lib/markdown'
 import { useViewport, DS } from '@/lib/design'
-import { Button, Pill, Card, Modal, Input as DSInput, Skeleton, EmptyState, VendorPill, PrimitivesGlobalStyles, PALETTE } from '@/components/ui/primitives'
+import { Button, Pill, Card, Modal, Input as DSInput, Textarea as DSTextarea, Skeleton, EmptyState, VendorPill, PrimitivesGlobalStyles, PALETTE } from '@/components/ui/primitives'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -1019,7 +1019,7 @@ export default function Home() {
             <div style={{ display:'flex', gap:10, marginBottom: filterVendor !== 'All' || search ? 10 : 16 }}>
               <div style={{ flex:1, position:'relative' }}>
                 <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:C.textMuted }}></span>
-                <input value={search} onChange={e => setSearch(e.target.value)}
+                <DSInput plain value={search} onChange={e => setSearch(e.target.value)}
                   placeholder="Search companies or WMS systems..."
                   style={{ width:'100%', background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 14px 10px 38px', color:C.text, fontSize:14, outline:'none', boxSizing:'border-box', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }} />
               </div>
@@ -1280,7 +1280,7 @@ export default function Home() {
                 <p style={{ margin:'4px 0 0', fontSize:13, color:C.textSub }}>All news, research findings, and WMS updates — newest first. Auto-refreshes every 5 minutes.</p>
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                <label style={{ fontSize:12, color:C.textSub, display:'flex', alignItems:'center', gap:6, cursor:'pointer', marginRight:8 }}><input type="checkbox" checked={showDismissed} onChange={e => setShowDismissed(e.target.checked)} style={{ margin:0 }} />Show dismissed</label>
+                <label style={{ fontSize:12, color:C.textSub, display:'flex', alignItems:'center', gap:6, cursor:'pointer', marginRight:8 }}><DSInput plain type="checkbox" checked={showDismissed} onChange={e => setShowDismissed(e.target.checked)} style={{ margin:0 }} />Show dismissed</label>
                 <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '—'}</span>
                 <Button variant="plain" onClick={load} disabled={refreshing}
                   style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'7px 14px', fontSize:13, fontWeight:600, cursor:refreshing?'default':'pointer', opacity:refreshing?0.6:1, display:'flex', alignItems:'center', gap:6 }}>
@@ -1383,7 +1383,7 @@ export default function Home() {
             </div>
             <div style={{ padding:'14px 16px', borderTop:`1px solid ${C.border}` }}>
               <div style={{ display:'flex', gap:10, marginBottom:10 }}>
-                <input value={input} onChange={e=>setInput(e.target.value)}
+                <DSInput plain value={input} onChange={e=>setInput(e.target.value)}
                   onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&send()}
                   placeholder="Ask about any company, WMS system, or trend..."
                   style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 14px', color:C.text, fontSize:14, outline:'none' }} />
@@ -1414,7 +1414,7 @@ export default function Home() {
                 {([['Company Name *','name','e.g. ASOS'],['Industry','industry','e.g. Fashion Retail'],['Country','country','e.g. United Kingdom'],['Region','region','e.g. EMEA']] as [string,string,string][]).map(([label,field,ph])=>(
                   <div key={field}>
                     <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>{label}</label>
-                    <input value={(form as any)[field]} onChange={e=>setForm({...form,[field]:e.target.value})} placeholder={ph}
+                    <DSInput plain value={(form as any)[field]} onChange={e=>setForm({...form,[field]:e.target.value})} placeholder={ph}
                       style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                   </div>
                 ))}
@@ -1424,22 +1424,22 @@ export default function Home() {
                 {([['WMS System *','wms_system','e.g. Blue Yonder Dispatcher'],['Vendor','vendor','e.g. Blue Yonder'],['Version','version','e.g. Blue Yonder Dispatcher'],['Site / Hub','site_name','e.g. UK DC']] as [string,string,string][]).map(([label,field,ph])=>(
                   <div key={field}>
                     <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>{label}</label>
-                    <input value={(form as any)[field]} onChange={e=>setForm({...form,[field]:e.target.value})} placeholder={ph}
+                    <DSInput plain value={(form as any)[field]} onChange={e=>setForm({...form,[field]:e.target.value})} placeholder={ph}
                       style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                   </div>
                 ))}
               </div>
               <div style={{ marginTop: 12 }}>
                 <label style={{ display:'block', fontSize: 12, color: C.textSub, marginBottom: 4 }}>Third-party logistics provider (optional)</label>
-                <input type="text" value={newCompany3PL || ''} onChange={e=>setNewCompany3PL(e.target.value)} placeholder="e.g. Unipart, Gist, Clipper" style={{ width:'100%', padding:'8px 10px', borderRadius: 8, border:`1px solid ${C.border}`, fontSize: 14 }} />
+                <DSInput plain type="text" value={newCompany3PL || ''} onChange={e=>setNewCompany3PL(e.target.value)} placeholder="e.g. Unipart, Gist, Clipper" style={{ width:'100%', padding:'8px 10px', borderRadius: 8, border:`1px solid ${C.border}`, fontSize: 14 }} />
               </div>
               <div style={{ marginTop: 8, marginBottom: 16, display:'flex', alignItems:'center', gap: 8 }}>
-                <input id="is3pl" type="checkbox" checked={newCompanyIs3PL || false} onChange={e=>setNewCompanyIs3PL(e.target.checked)} />
+                <DSInput plain id="is3pl" type="checkbox" checked={newCompanyIs3PL || false} onChange={e=>setNewCompanyIs3PL(e.target.checked)} />
                 <label htmlFor="is3pl" style={{ fontSize: 13, color: C.textSub }}>This company is itself a 3PL provider</label>
               </div>
               <div style={{ marginBottom:20 }}>
                 <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Notes / Intel</label>
-                <textarea value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3}
+                <DSTextarea plain value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} rows={3}
                   placeholder="Any intelligence, news signals, or context..."
                   style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', resize:'none', boxSizing:'border-box' }} />
               </div>
@@ -1455,14 +1455,14 @@ export default function Home() {
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:14 }}>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Industry (applies to all)</label>
-                  <input value={bulkIndustry} onChange={e => setBulkIndustry(e.target.value)} placeholder="e.g. 3PL" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                  <DSInput plain value={bulkIndustry} onChange={e => setBulkIndustry(e.target.value)} placeholder="e.g. 3PL" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                 </div>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Country (applies to all)</label>
-                  <input value={bulkCountry} onChange={e => setBulkCountry(e.target.value)} placeholder="e.g. United Kingdom" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                  <DSInput plain value={bulkCountry} onChange={e => setBulkCountry(e.target.value)} placeholder="e.g. United Kingdom" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                 </div>
               </div>
-              <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} rows={6} placeholder={'Tesco\nOcado\nDPD UK\nKuehne+Nagel'} style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', resize:'vertical', boxSizing:'border-box', fontFamily:'inherit', marginBottom:14 }} />
+              <DSTextarea plain value={bulkText} onChange={e => setBulkText(e.target.value)} rows={6} placeholder={'Tesco\nOcado\nDPD UK\nKuehne+Nagel'} style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', resize:'vertical', boxSizing:'border-box', fontFamily:'inherit', marginBottom:14 }} />
               <Button variant="plain" onClick={bulkImport} disabled={bulkBusy || !bulkText.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: bulkBusy || !bulkText.trim() ? 'default' : 'pointer', opacity: bulkBusy || !bulkText.trim() ? 0.5 : 1 }}>{bulkBusy ? 'Importing...' : `Import ${bulkText.split('\n').map(s => s.trim()).filter(Boolean).length} companies`}</Button>
               {bulkResult && (
                 <div style={{ marginTop:12, background: bulkResult.error ? C.redLight : C.greenLight, color: bulkResult.error ? C.red : C.green, border: `1px solid ${bulkResult.error ? C.redBorder : C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>
@@ -1476,11 +1476,11 @@ export default function Home() {
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:14 }}>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Industry / vertical</label>
-                  <input value={suggestIndustry} onChange={e => setSuggestIndustry(e.target.value)} placeholder="3PL, Retail, Supermarket, Pharma, …" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                  <DSInput plain value={suggestIndustry} onChange={e => setSuggestIndustry(e.target.value)} placeholder="3PL, Retail, Supermarket, Pharma, …" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                 </div>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Country</label>
-                  <input value={suggestCountry} onChange={e => setSuggestCountry(e.target.value)} placeholder="e.g. United Kingdom" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                  <DSInput plain value={suggestCountry} onChange={e => setSuggestCountry(e.target.value)} placeholder="e.g. United Kingdom" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                 </div>
               </div>
               <Button variant="plain" onClick={getSuggestions} disabled={suggestBusy || !suggestIndustry.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: suggestBusy || !suggestIndustry.trim() ? 'default' : 'pointer', opacity: suggestBusy || !suggestIndustry.trim() ? 0.5 : 1 }}>{suggestBusy ? 'Searching the web...' : 'Get Claude\'s suggestions'}</Button>

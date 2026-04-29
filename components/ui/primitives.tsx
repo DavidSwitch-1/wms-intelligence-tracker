@@ -433,11 +433,15 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string
   leftIcon?: ReactNode
   rightIcon?: ReactNode
+  plain?: boolean
 }
 export function Input({
-  label, hint, error, leftIcon, rightIcon, style, ...rest
+  label, hint, error, leftIcon, rightIcon, plain, style, ...rest
 }: InputProps) {
   const hasError = !!error
+  if (plain) {
+    return <input {...rest} style={style} />
+  }
   return (
     <label style={{ display: 'block' }}>
       {label && (
@@ -504,6 +508,71 @@ export function Input({
           display: 'block',
           marginTop: 4,
           fontSize: 11,
+          color: hasError ? PALETTE.danger : PALETTE.inkSoft,
+        }}>
+          {error || hint}
+        </span>
+      )}
+    </label>
+  )
+}
+
+/* ============================================================
+ * Textarea
+ * ============================================================ */
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label?: string
+  hint?: string
+  error?: string
+  plain?: boolean
+}
+export function Textarea({
+  label, hint, error, plain, style, ...rest
+}: TextareaProps) {
+  const hasError = !!error
+  if (plain) {
+    return <textarea {...rest} style={style} />
+  }
+  return (
+    <label style={{ display: 'block' }}>
+      {label && (
+        <span style={{
+          display: 'block', fontSize: 11, fontWeight: 600, letterSpacing: 0.4,
+          textTransform: 'uppercase', color: PALETTE.inkMute, marginBottom: 6,
+        }}>{label}</span>
+      )}
+      <textarea
+        {...rest}
+        style={{
+          width: '100%',
+          padding: '10px 12px',
+          background: PALETTE.paper,
+          border: '1px solid ' + (hasError ? PALETTE.danger : PALETTE.border),
+          borderRadius: 8,
+          color: PALETTE.navy,
+          fontSize: 13,
+          fontFamily: 'inherit',
+          outline: 'none',
+          resize: 'vertical',
+          transition: transition('border-color, background, box-shadow'),
+          ...style,
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.background = PALETTE.cream
+          e.currentTarget.style.boxShadow = DS.shadow.focus
+          e.currentTarget.style.borderColor = PALETTE.yellow
+          rest.onFocus?.(e)
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.background = PALETTE.paper
+          e.currentTarget.style.boxShadow = 'none'
+          e.currentTarget.style.borderColor = hasError ? PALETTE.danger : PALETTE.border
+          rest.onBlur?.(e)
+        }}
+      />
+      {(hint || error) && (
+        <span style={{
+          display: 'block', marginTop: 4, fontSize: 11,
           color: hasError ? PALETTE.danger : PALETTE.inkSoft,
         }}>
           {error || hint}
