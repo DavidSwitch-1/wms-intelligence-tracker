@@ -836,7 +836,7 @@ export default function Home() {
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:11, color:C.textMuted }}>Updated {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : 'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ'}</span>
           <Button variant="plain" onClick={load} disabled={refreshing} style={{ fontSize:12, color:C.blue, background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:6, padding:'4px 10px', cursor:refreshing?'default':'pointer', fontWeight:500, opacity:refreshing?0.6:1 }}>
-            {refreshing ? 'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ» ...' : 'ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ» Refresh'}
+            {refreshing ? <><RefreshCw size={14} className="spin"/> ...</> : <><RefreshCw size={14}/> Refresh</>}
           </Button>
         </div>
       </div>
@@ -1015,7 +1015,7 @@ export default function Home() {
                       <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
                       <span style={{ fontSize:11, color:C.textMuted, fontWeight:500 }}>+{weekCompanies} {weekCompanies === 1 ? 'company' : 'companies'}, +{weekThreePLs} 3PLs this week</span>
                     </div>
-                    <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Auto-discovered by the nightly sweep ÃÂÃÂ¢ÃÂÃÂÃÂÃÂ verify or dismiss to keep the dataset clean.</div>
+                    <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Auto-discovered by the nightly sweep · verify or dismiss to keep the dataset clean.</div>
                     {recentDiscoveries.length === 0 ? (
                       <Card variant='inset' padding={14} style={{ marginBottom:14 }}>
                         <div style={{ fontSize:13, color:C.textSub }}>No new discoveries this week. The next sweep runs nightly at 02:00 UTC.</div>
