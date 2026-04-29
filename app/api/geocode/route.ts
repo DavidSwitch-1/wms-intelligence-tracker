@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Geocode pending companies via OpenStreetMap Nominatim.
 //
-// Auth: Bearer ${process.env.CRON_SECRET} Ã¢ÂÂ same pattern as /api/cron.
+// Auth: Bearer ${process.env.CRON_SECRET} ÃÂ¢ÃÂÃÂ same pattern as /api/cron.
 //
 // Behaviour: pulls up to 50 companies that have either no latitude
 // or were last geocoded > 6 months ago, then queries Nominatim with
@@ -45,6 +45,9 @@ async function geocodeOne(name: string, country: string | null, hqCity: string |
     hqCity && country ? `${name}, ${hqCity}, ${country}` : null,
     country ? `${name}, ${country}` : null,
     name,
+    hqCity && country ? `${hqCity}, ${country}` : null,
+    hqCity || null,
+    country || null,
   ].filter(Boolean) as string[]
 
   for (let qi = 0; qi < queries.length; qi++) {
@@ -79,7 +82,7 @@ export async function GET(req: NextRequest) {
 }
 
 async function run(req: NextRequest) {
-  // Auth Ã¢ÂÂ Bearer CRON_SECRET, same pattern as /api/cron.
+  // Auth ÃÂ¢ÃÂÃÂ Bearer CRON_SECRET, same pattern as /api/cron.
   const auth = req.headers.get('authorization') || ''
   const expected = `Bearer ${process.env.CRON_SECRET || ''}`
   if (!process.env.CRON_SECRET || auth !== expected) {
