@@ -839,6 +839,78 @@ export default function Home() {
                   </Card>
                 ))}
               </div>
+              {(() => {
+                const recentDiscoveries = (companies || [])
+                  .filter((c: any) => c.auto_discovered && c.discovery_status === 'pending')
+                  .sort((a: any, b: any) => {
+                    const ta = a.discovered_at ? new Date(a.discovered_at).getTime() : 0
+                    const tb = b.discovered_at ? new Date(b.discovered_at).getTime() : 0
+                    return tb - ta
+                  })
+                  .slice(0, 8)
+
+                const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+                const weekDiscoveries = (companies || []).filter((c: any) =>
+                  c.auto_discovered && c.discovered_at && new Date(c.discovered_at).getTime() > weekAgo
+                )
+                const weekCompanies = weekDiscoveries.filter((c: any) => !c.is_3pl).length
+                const weekThreePLs = weekDiscoveries.filter((c: any) => c.is_3pl).length
+
+                async function verifyDiscovery(id: string) {
+                  try {
+                    await fetch('/api/companies/' + id, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ discovery_status: 'verified' }),
+                    })
+                    await load()
+                  } catch (e) { console.error('verify failed', e) }
+                }
+                async function dismissDiscovery(id: string) {
+                  try {
+                    await fetch('/api/companies/' + id, { method: 'DELETE' })
+                    await load()
+                  } catch (e) { console.error('dismiss failed', e) }
+                }
+
+                return (
+                  <>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, marginTop:8 }}>
+                      <Sparkles size={16} color={C.amber} />
+                      <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Recently discovered</h3>
+                      <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
+                      <span style={{ fontSize:11, color:C.textMuted, fontWeight:500 }}>+{weekCompanies} {weekCompanies === 1 ? 'company' : 'companies'}, +{weekThreePLs} 3PLs this week</span>
+                    </div>
+                    <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Auto-discovered by the nightly sweep — verify or dismiss to keep the dataset clean.</div>
+                    {recentDiscoveries.length === 0 ? (
+                      <Card variant='inset' padding={14} style={{ marginBottom:14 }}>
+                        <div style={{ fontSize:13, color:C.textSub }}>No new discoveries this week. The next sweep runs nightly at 02:00 UTC.</div>
+                      </Card>
+                    ) : (
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:10, marginBottom:14 }}>
+                        {recentDiscoveries.map((d: any) => (
+                          <Card key={d.id} variant='default' padding={12}>
+                            <div style={{ fontSize:14, fontWeight:500, color:C.text }}>{d.name}</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', fontSize:11, color:C.textSub, marginTop:4 }}>
+                              {d.industry && <span>{d.industry}</span>}
+                              {d.industry && d.country && <span>·</span>}
+                              {d.country && <span>{d.country}</span>}
+                              {d.is_3pl && <Pill variant='brand' size='sm'>3PL Provider</Pill>}
+                            </div>
+                            {d.discovered_at && (
+                              <div style={{ fontSize:11, color:C.textMuted, marginTop:6 }}>Auto-discovered {timeAgo(d.discovered_at) || 'recently'}</div>
+                            )}
+                            <div style={{ display:'flex', gap:6, marginTop:10 }}>
+                              <Button variant='primary' size='sm' onClick={() => verifyDiscovery(d.id)}>Verify</Button>
+                              <Button variant='tertiary' size='sm' onClick={() => dismissDiscovery(d.id)}>Dismiss</Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, marginTop:8 }}>
                 <Zap size={16} color={C.yellow} />
                 <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Hot Leads This Week</h3>
