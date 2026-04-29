@@ -96,6 +96,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     update.is_3pl = body.is_3pl
   }
 
+  // starred: boolean. When toggling true we stamp starred_at = now(); when
+  // toggling false we clear it. Both fields go through the same Supabase
+  // update so the response reflects the new state.
+  if (Object.prototype.hasOwnProperty.call(body, 'starred')) {
+    if (typeof body.starred !== 'boolean') {
+      return NextResponse.json({ error: 'starred must be a boolean' }, { status: 400 })
+    }
+    update.starred = body.starred
+    update.starred_at = body.starred ? new Date().toISOString() : null
+  }
+
   // wms_system / wms_version live on the related wms_entries table; collect
   // them separately and apply to the most recent entry after the company
   // update has succeeded.
