@@ -1134,27 +1134,32 @@ export default function Home() {
                 <div style={{ display:'flex', gap:8 }}>
                   <button onClick={(e) => { e.stopPropagation(); researchCompany(selected) }}
                     disabled={researching[selected.id]}
-                    style={{ padding:'8px 16px', borderRadius:8, background:researching[selected.id] ? C.grayLight : C.surfaceAlt, color: researching[selected.id] ? C.textMuted : C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:500, cursor: researching[selected.id] ? 'default' : 'pointer', opacity: researching[selected.id] ? 0.6 : 1 }}>
+                    className="btn-hover"
+                    style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background:researching[selected.id] ? C.grayLight : C.surfaceAlt, color: researching[selected.id] ? C.textMuted : C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:600, height:36, cursor: researching[selected.id] ? 'default' : 'pointer', opacity: researching[selected.id] ? 0.6 : 1 }}>
                     {researching[selected.id] ? 'Researching...' : selected.wms_entries?.some((w:any) => w.wms_system === 'Unknown') ? 'Research WMS' : 'Check for news'}
                   </button>
                   <button onClick={() => { setInput(`Tell me everything about ${selected.name}'s WMS setup, any recent news, and whether our records are current.`); gotoTab('chat') }}
-                    style={{ padding:'8px 18px', borderRadius:8, background:C.blue, color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>Ask AI
+                    className="btn-hover"
+                    style={{ padding:'8px 18px', borderRadius:8, background:C.blue, color:'#fff', border:`1px solid ${C.blue}`, fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, height:36 }}>Ask AI
                   </button>
                   <button onClick={() => generateBrief(selected)}
                     disabled={briefLoading}
-                    style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B500', fontSize:13, fontWeight:700, cursor: briefLoading ? 'wait' : 'pointer', opacity: briefLoading ? 0.7 : 1 }}>
+                    className="btn-hover"
+                    style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:700, cursor: briefLoading ? 'wait' : 'pointer', height:36, opacity: briefLoading ? 0.7 : 1 }}>
                     <FileText size={14} strokeWidth={2.5} />
                     {briefLoading && briefCompany?.id === selected.id ? 'Generating…' : 'Generate brief'}
                   </button>
                   <button onClick={() => fetchLookalike(selected)}
                     disabled={lookalikeLoading}
-                    style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:8, background:C.yellowLight, color:C.yellow, border:`1px solid ${C.yellowBorder}`, fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                    className="btn-hover"
+                    style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:C.yellowLight, color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:600, cursor:'pointer', height:36 }}>
                     <Users size={14} />
                     {lookalikeLoading && lookalikeSource?.id === selected.id ? 'Searching…' : 'Find similar'}
                   </button>
                   <button onClick={() => generateInmail(selected)}
                     disabled={inmailLoading}
-                    style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B500', fontSize:13, fontWeight:700, cursor: inmailLoading ? 'wait' : 'pointer', opacity: inmailLoading ? 0.7 : 1 }}>
+                    className="btn-hover"
+                    style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:700, cursor: inmailLoading ? 'wait' : 'pointer', height:36, opacity: inmailLoading ? 0.7 : 1 }}>
                     <MessageSquare size={14} strokeWidth={2.5} />
                     {inmailLoading && inmailCompany?.id === selected.id ? 'Drafting…' : 'Draft InMail'}
                   </button>
@@ -1512,6 +1517,14 @@ export default function Home() {
         textarea::placeholder{color:#9ca3af}
         a:hover{opacity:0.8}
         .spin{animation:spin 1s linear infinite}
+        .btn-hover{transition:filter 120ms cubic-bezier(0.4,0,0.2,1), background-color 120ms cubic-bezier(0.4,0,0.2,1), border-color 120ms cubic-bezier(0.4,0,0.2,1), transform 120ms cubic-bezier(0.4,0,0.2,1)}
+        .btn-hover:hover:not(:disabled){filter:brightness(0.96)}
+        .btn-hover:active:not(:disabled){transform:translateY(1px)}
+        .btn-ghost{transition:background-color 120ms cubic-bezier(0.4,0,0.2,1)}
+        .btn-ghost:hover:not(:disabled){background:rgba(11,28,55,0.05) !important}
+        button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #FECC01;outline-offset:2px;border-radius:6px}
+        .row-hover{transition:background-color 120ms cubic-bezier(0.4,0,0.2,1)}
+        .row-hover:hover{background:rgba(11,28,55,0.03)}
       `}</style>
       
       {/* ── PRE-PITCH BRIEF MODAL ── */}
