@@ -998,7 +998,7 @@ export default function Home() {
             </div>
 
             {/* Saved views strip */}
-            <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:6, marginBottom:12 }}>
+            <div style={{ display:'flex', flexWrap: isMobile ? 'nowrap' : 'wrap', overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch', alignItems:'center', gap:6, marginBottom:12, paddingBottom: isMobile ? 4 : 0 }}>
               {savedViews.map(v => (
                 <span key={v.id} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 4px 4px 10px', borderRadius:99, background:C.surfaceAlt, border:`1px solid ${C.border}`, fontSize:12, color:C.textSub }}>
                   <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || ''); setSelected(null); gotoTab('db') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
@@ -1525,12 +1525,17 @@ export default function Home() {
         button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid #FECC01;outline-offset:2px;border-radius:6px}
         .row-hover{transition:background-color 120ms cubic-bezier(0.4,0,0.2,1)}
         .row-hover:hover{background:rgba(11,28,55,0.03)}
+        .h-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+        .h-scroll::-webkit-scrollbar{height:6px}
+        .h-scroll::-webkit-scrollbar-thumb{background:rgba(11,28,55,0.18);border-radius:99px}
+        .no-scrollbar{scrollbar-width:none}
+        .no-scrollbar::-webkit-scrollbar{display:none}
       `}</style>
       
       {/* ── PRE-PITCH BRIEF MODAL ── */}
       {showBrief && (
         <div onClick={() => !briefLoading && setShowBrief(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, maxWidth:720, width:'100%', maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
@@ -1592,7 +1597,7 @@ export default function Home() {
       {/* ── INMAIL MODAL ── */}
       {showInmail && (
         <div onClick={() => !inmailLoading && setShowInmail(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, maxWidth:640, width:'100%', maxHeight:'85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
@@ -1653,7 +1658,7 @@ export default function Home() {
       {/* ── LOOKALIKE COMPANIES MODAL ── */}
       {lookalikeOpen && (
         <div onClick={() => !lookalikeLoading && setLookalikeOpen(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:99, padding:20 }}>
+          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:99, padding: isMobile ? 0 : 20 }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, width:'min(640px, 100%)', maxHeight:'80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 20px 50px rgba(11,28,55,0.18)' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#FFFFFF' }}>
@@ -1705,7 +1710,7 @@ export default function Home() {
       {/* ── LINKEDIN POST DRAFTS MODAL ── */}
       {linkedinModalOpen && (
         <div onClick={() => !linkedinLoading && setLinkedinModalOpen(false)}
-          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+          style={{ position:'fixed', inset:0, background:'rgba(11,28,55,0.55)', display:'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent:'center', zIndex:1000, padding: isMobile ? 0 : 20 }}>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, maxWidth:780, width:'100%', maxHeight:'88vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'18px 22px', borderBottom:`1px solid ${C.border}`, background:'#0B1C37', color:'#fff', borderRadius:'16px 16px 0 0' }}>
