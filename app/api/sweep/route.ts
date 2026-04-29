@@ -448,12 +448,172 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  console.log(`[sweep] processed=${scored.length} findings=${results.length} briefs=${briefsGenerated} linkedin=${linkedinGenerated}`)
+
+  // ---- Auto-discovery: proactively find new companies + 3PLs ----
+  // Each pass = ONE Claude call (Haiku) with web_search. Wrapped in try/catch
+  // so a discovery failure can't take out the existing research run.
+  // David approves each candidate from the Dashboard "Recently discovered" strip.
+  let discoveredCompanies = 0
+  let discoveredThreePLs = 0
+
+  try {
+    const allCompanies = companies || []
+    const industryCounts: Record<string, number> = {}
+    const countryCounts: Record<string, number> = {}
+    const wmsCounts: Record<string, number> = {}
+    for (const c of allCompanies) {
+      if (c.industry) industryCounts[c.industry] = (industryCounts[c.industry] || 0) + 1
+      if (c.country) countryCounts[c.country] = (countryCounts[c.country] || 0) + 1
+      for (const w of (c.wms_entries || [])) {
+        if (w.wms_system && w.wms_system !== 'Unknown') {
+          wmsCounts[w.wms_system] = (wmsCounts[w.wms_system] || 0) + 1
+        }
+      }
+    }
+    const topIndustries = Object.entries(industryCounts).sort((a, b) => b[1] - a[1]).slice(0, 8)
+    const topCountries = Object.entries(countryCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
+    const topWMS = Object.entries(wmsCounts).sort((a, b) => b[1] - a[1]).slice(0, 8)
+
+    const sampleSize = Math.min(30, allCompanies.length)
+    const shuffled = [...allCompanies].sort(() => Math.random() - 0.5)
+    const sampleNames = shuffled.slice(0, sampleSize).map((c: any) => c.name)
+    const threePLNamesInDB = allCompanies.filter((c: any) => c.is_3pl).map((c: any) => c.name).slice(0, 20)
+
+    const datasetSummary =
+      'Total companies: ' + allCompanies.length + '\n' +
+      'Top industries: ' + topIndustries.map(([k, v]) => k + ' (' + v + ')').join(', ') + '\n' +
+      'Top countries: ' + topCountries.map(([k, v]) => k + ' (' + v + ')').join(', ') + '\n' +
+      'Top WMS systems in use: ' + topWMS.map(([k, v]) => k + ' (' + v + ')').join(', ') + '\n' +
+      'Random sample of existing companies: ' + sampleNames.join(', ') + '\n' +
+      'Known 3PLs already in DB: ' + (threePLNamesInDB.length ? threePLNamesInDB.join(', ') : '(none)')
+
+    const normaliseName = (n: string) => n.toLowerCase()
+      .replace(/\s+(group|holdings?|ltd|limited|inc|incorporated|plc|corp|corporation|gmbh|sa|nv|bv|llc|llp|co)\.?$/i, '')
+      .replace(/[^\w\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    const existingNames = new Set(allCompanies.map((c: any) => normaliseName(c.name)).filter(Boolean))
+
+    async function callDiscovery(systemPrompt: string, userPrompt: string): Promise<any[]> {
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.ANTHROPIC_API_KEY!,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: HAIKU_MODEL,
+            max_tokens: 4000,
+            tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 5 }],
+            system: systemPrompt,
+            messages: [{ role: 'user', content: userPrompt }],
+          }),
+        })
+        const data = await r.json()
+        let text = ''
+        if (Array.isArray(data.content)) {
+          for (const block of data.content) {
+            if (block.type === 'text') text += block.text
+          }
+        }
+        text = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim()
+        const m = text.match(/\{[\s\S]*\}/)
+        if (!m) return []
+        try {
+          const parsed = JSON.parse(m[0])
+          return Array.isArray(parsed.discoveries) ? parsed.discoveries : []
+        } catch {
+          return []
+        }
+      } catch (e) {
+        console.error('[sweep] discovery call failed', e)
+        return []
+      }
+    }
+
+    const sysA =
+      "You're helping a WMS recruitment consultancy expand their company database. Below is a summary of the current dataset. Identify 10-15 NEW companies (NOT already in the dataset) that would fit this pattern \u2014 businesses with significant warehousing/fulfilment operations, similar industry/scale/geography to the existing entries. Use web search to verify each company actually exists, has a real website, and is plausibly using a WMS today. EXCLUDE: any company already named in the sample, any subsidiary of a company already in the sample, any business that is too small to plausibly run a real WMS (under ~50 staff or under ~\u00a310M revenue). Reply as JSON: {\"discoveries\": [{\"name\": \"Rapha\", \"industry\": \"Apparel & Lifestyle\", \"country\": \"UK\", \"rationale\": \"Premium cycling brand with ~\u00a3100M revenue, multiple fulfilment centres, fits existing apparel pattern\"}, ...]}. Nothing else, no markdown fences."
+
+    const sysB =
+      "Same dataset summary. Now identify 5-10 third-party logistics (3PL) providers that operate warehousing for OTHER companies, similar to Unipart, Gist, Clipper, GXO, Wincanton, DHL Supply Chain, Kuehne+Nagel, Yusen, XPO. Use web search to verify they're real and active. EXCLUDE 3PLs already named in the sample. Reply as JSON: {\"discoveries\": [{\"name\": \"Bleckmann\", \"country\": \"Belgium\", \"rationale\": \"European 3PL specialising in fashion fulfilment\"}, ...]}. Nothing else, no markdown fences."
+
+    // Run both passes in parallel — one Claude call each, capped at 4000 tokens.
+    const [resA, resB] = await Promise.allSettled([
+      callDiscovery(sysA, datasetSummary),
+      callDiscovery(sysB, datasetSummary),
+    ])
+
+    if (resA.status === 'fulfilled') {
+      for (const d of resA.value) {
+        try {
+          if (!d || typeof d.name !== 'string' || !d.name.trim()) continue
+          const norm = normaliseName(d.name)
+          if (!norm || existingNames.has(norm)) continue
+          const { error } = await supabase.from('companies').insert({
+            name: d.name.trim(),
+            industry: typeof d.industry === 'string' && d.industry.trim() ? d.industry.trim() : null,
+            country: typeof d.country === 'string' && d.country.trim() ? d.country.trim() : null,
+            wms_system: 'Unknown',
+            auto_discovered: true,
+            discovered_at: new Date().toISOString(),
+            discovery_status: 'pending',
+          })
+          if (!error) {
+            discoveredCompanies += 1
+            existingNames.add(norm)
+          } else {
+            console.error('[sweep] discovery insert (company) skipped', d.name, error.message)
+          }
+        } catch (e) {
+          console.error('[sweep] discovery row (A) failed', e)
+        }
+      }
+    } else {
+      console.error('[sweep] discovery pass A rejected', resA.reason)
+    }
+
+    if (resB.status === 'fulfilled') {
+      for (const d of resB.value) {
+        try {
+          if (!d || typeof d.name !== 'string' || !d.name.trim()) continue
+          const norm = normaliseName(d.name)
+          if (!norm || existingNames.has(norm)) continue
+          const { error } = await supabase.from('companies').insert({
+            name: d.name.trim(),
+            industry: typeof d.industry === 'string' && d.industry.trim() ? d.industry.trim() : '3PL Provider',
+            country: typeof d.country === 'string' && d.country.trim() ? d.country.trim() : null,
+            wms_system: 'Unknown',
+            is_3pl: true,
+            auto_discovered: true,
+            discovered_at: new Date().toISOString(),
+            discovery_status: 'pending',
+          })
+          if (!error) {
+            discoveredThreePLs += 1
+            existingNames.add(norm)
+          } else {
+            console.error('[sweep] discovery insert (3pl) skipped', d.name, error.message)
+          }
+        } catch (e) {
+          console.error('[sweep] discovery row (B) failed', e)
+        }
+      }
+    } else {
+      console.error('[sweep] discovery pass B rejected', resB.reason)
+    }
+  } catch (e) {
+    console.error('[sweep] discovery block failed', e)
+  }
+
+  console.log(`[sweep] processed=${scored.length} findings=${results.length} briefs=${briefsGenerated} linkedin=${linkedinGenerated} discovered_companies=${discoveredCompanies} discovered_3pls=${discoveredThreePLs}`)
 
   return NextResponse.json({
     processed: scored.length,
     findings: results.length,
     results,
     pregen: { briefs: briefsGenerated, linkedin: linkedinGenerated, news_ids: insertedNewsIds },
+    discoveries: { companies: discoveredCompanies, three_pls: discoveredThreePLs },
   })
 }
