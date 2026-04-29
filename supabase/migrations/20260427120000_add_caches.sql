@@ -51,3 +51,9 @@ alter table public.companies add column if not exists discovery_status text defa
 
 create index if not exists companies_auto_discovered_idx on public.companies(auto_discovered, discovery_status) where auto_discovered;
 create index if not exists companies_discovered_at_idx on public.companies(discovered_at desc) where auto_discovered;
+-- Watching list / starred companies (added 2026-04-29).
+-- Recruiter-mental-model: the 5-10 companies someone is actively pitching this
+-- week, surfaced first on the Dashboard as a "Watching" strip.
+alter table public.companies add column if not exists starred boolean not null default false;
+alter table public.companies add column if not exists starred_at timestamptz;
+create index if not exists companies_starred_idx on public.companies(starred, starred_at desc) where starred;
