@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck, Pencil } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck, Pencil, Star } from 'lucide-react'
 
 import dynamic from 'next/dynamic'
 
@@ -207,6 +207,7 @@ export default function Home() {
   const [mapCountryFilter, setMapCountryFilter] = useState('')
   const [map3plFilter, setMap3plFilter] = useState('')
   const [filter3pl, setFilter3pl] = useState('')
+  const [filterStarred, setFilterStarred] = useState(false)
   const [newCompany3PL, setNewCompany3PL] = useState('')
   const [newCompanyIs3PL, setNewCompanyIs3PL] = useState(false)
   const [newsRecencyFilter, setNewsRecencyFilter] = useState<'12m'|'all'>('12m')
@@ -260,7 +261,7 @@ export default function Home() {
   const [lookalikeData, setLookalikeData] = useState<any[]>([])
   const [lookalikeError, setLookalikeError] = useState('')
   const [lookalikeSource, setLookalikeSource] = useState<any>(null)
-  const [savedViews, setSavedViews] = useState<{id:string, name:string, filters:{industry?:string, country?:string, wms?:string, signal?:string, query?:string, filter3pl?:string}}[]>([])
+  const [savedViews, setSavedViews] = useState<{id:string, name:string, filters:{industry?:string, country?:string, wms?:string, signal?:string, query?:string, filter3pl?:string, starredOnly?:boolean}}[]>([])
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [paletteQuery, setPaletteQuery] = useState('')
@@ -304,6 +305,23 @@ export default function Home() {
     }
     setRefreshing(false)
   }, [])
+
+  // Star toggle: PATCH /api/companies/<id> with { starred: bool } and refresh
+  // the local list so the row + detail panel re-render with the new state.
+  const toggleStar = useCallback(async (id: string, next: boolean) => {
+    try {
+      const r = await fetch(`/api/companies/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ starred: next })
+      })
+      if (!r.ok) {
+        console.error('star toggle failed', r.status)
+        return
+      }
+      await load()
+    } catch (e) { console.error('star toggle failed', e) }
+  }, [load])
 
   async function runGeocode() {
     setGeocoding(true)
@@ -673,7 +691,7 @@ export default function Home() {
     if (filter3pl === 'has' && !c.third_party_logistics) return false
     if (filter3pl === 'is' && !c.is_3pl) return false
     return true
-  })
+  }).filter((c: any) => filterStarred ? !!c.starred : true)
 
   const stats = [
     { label:'Total Companies', value:companies.length, color:C.blue, bg:C.blueLight, border:C.blueBorder, filter:'All' },
@@ -893,6 +911,68 @@ export default function Home() {
                   </Card>
                 ))}
               </div>
+              {(() => {
+                const watching = (companies || []).filter((c: any) => !!c.starred)
+                const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+                const newestNewsTs = (c: any) => {
+                  const ts = (c.news_updates || [])
+                    .map((n: any) => n.published_at || n.created_at)
+                    .filter(Boolean)
+                    .map((t: string) => new Date(t).getTime())
+                  return ts.length ? Math.max(...ts) : 0
+                }
+                const sortedWatching = [...watching].sort((a: any, b: any) => {
+                  const aFresh = newestNewsTs(a)
+                  const bFresh = newestNewsTs(b)
+                  const aRecent = aFresh > sevenDaysAgo ? aFresh : 0
+                  const bRecent = bFresh > sevenDaysAgo ? bFresh : 0
+                  if (aRecent !== bRecent) return bRecent - aRecent
+                  const aStar = a.starred_at ? new Date(a.starred_at).getTime() : 0
+                  const bStar = b.starred_at ? new Date(b.starred_at).getTime() : 0
+                  return bStar - aStar
+                })
+                return (
+                  <>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, marginTop:8 }}>
+                      <Star size={16} color={C.yellowBorder} fill={C.yellowBorder} />
+                      <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Watching</h3>
+                      <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
+                      <span style={{ fontSize:11, color:C.textMuted, fontWeight:500 }}>{sortedWatching.length} {sortedWatching.length === 1 ? 'company' : 'companies'} pinned</span>
+                    </div>
+                    <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies you are actively pitching this week. Click the star on any company to watch it here.</div>
+                    {sortedWatching.length === 0 ? (
+                      <Card variant='inset' padding={14} style={{ marginBottom:14 }}>
+                        <div style={{ fontSize:13, color:C.textSub, display:'flex', alignItems:'center', gap:8 }}>
+                          <Star size={14} color={C.textMuted} />
+                          <span>No companies starred yet. Click the star on any company to watch it here.</span>
+                        </div>
+                      </Card>
+                    ) : (
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:10, marginBottom:14 }}>
+                        {sortedWatching.map((w: any) => {
+                          const fresh = newestNewsTs(w)
+                          const freshIso = fresh ? new Date(fresh).toISOString() : null
+                          const wmsLatest = (w.wms_entries && w.wms_entries[0] && w.wms_entries[0].wms_system) || null
+                          return (
+                            <Card key={w.id} variant='default' padding={12} onClick={() => { setSelected(w); gotoTab('db') }} style={{ cursor:'pointer' }}>
+                              <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:4 }}>
+                                <div style={{ fontWeight:700, fontSize:13, color:C.text, lineHeight:1.25 }}>{w.name}</div>
+                                <Star size={13} fill={'#FECC01'} stroke={'#FECC01'} />
+                              </div>
+                              <div style={{ fontSize:11, color:C.textMuted, marginBottom:6 }}>{[w.industry, w.country, wmsLatest].filter(Boolean).join(' · ')}</div>
+                              {freshIso && (
+                                <div style={{ fontSize:11, color: fresh > sevenDaysAgo ? C.blue : C.textMuted, fontWeight: fresh > sevenDaysAgo ? 600 : 500 }}>
+                                  Last news: {timeAgo(freshIso)}
+                                </div>
+                              )}
+                            </Card>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
               {(() => {
                 const recentDiscoveries = (companies || [])
                   .filter((c: any) => c.auto_discovered && c.discovery_status === 'pending')
@@ -1134,14 +1214,14 @@ export default function Home() {
             <div style={{ display:'flex', flexWrap: isMobile ? 'nowrap' : 'wrap', overflowX: isMobile ? 'auto' : 'visible', WebkitOverflowScrolling: 'touch', alignItems:'center', gap:6, marginBottom:12, paddingBottom: isMobile ? 4 : 0 }}>
               {savedViews.map(v => (
                 <span key={v.id} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 4px 4px 10px', borderRadius:99, background:C.surfaceAlt, border:`1px solid ${C.border}`, fontSize:12, color:C.textSub }}>
-                  <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || ''); setSelected(null); gotoTab('db') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
+                  <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || ''); setFilterStarred(!!v.filters.starredOnly); setSelected(null); gotoTab('db') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
                   <Button variant="ghost" onClick={() => { if(confirm('Delete saved view "' + v.name + '"?')) setSavedViews(prev => prev.filter(p => p.id !== v.id)) }}
                     style={{ display:'flex', alignItems:'center', justifyContent:'center', width:18, height:18, padding:0, border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', borderRadius:99 }}>
                     <X size={11} />
                   </Button>
                 </span>
               ))}
-              <Button variant="ghost" onClick={() => { if (filterVendor === 'All' && !search) { alert('Set a filter or search first, then save the view.'); return } const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined } }]) }}
+              <Button variant="ghost" onClick={() => { if (filterVendor === 'All' && !search && !filterStarred) { alert('Set a filter or search first, then save the view.'); return } const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined, starredOnly: filterStarred || undefined } }]) }}
                 style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:99, background:'transparent', border:`1px dashed ${C.borderHov}`, fontSize:12, color:C.textSub, cursor:'pointer', fontWeight:600 }}>
                 <Plus size={11} /> Save current view
               </Button>
@@ -1163,6 +1243,7 @@ export default function Home() {
               </select>
               <Button variant="plain" onClick={()=>setFilter3pl(filter3pl === 'has' ? '' : 'has')} style={{ padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filter3pl === 'has' ? C.yellowLight : C.surfaceAlt, color: filter3pl === 'has' ? C.text : C.textSub, border:`1px solid ${filter3pl === 'has' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Has 3PL</Button>
               <Button variant="plain" onClick={()=>setFilter3pl(filter3pl === 'is' ? '' : 'is')} style={{ padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filter3pl === 'is' ? C.yellowLight : C.surfaceAlt, color: filter3pl === 'is' ? C.text : C.textSub, border:`1px solid ${filter3pl === 'is' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Is 3PL</Button>
+              <Button variant="plain" onClick={() => setFilterStarred(s => !s)} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filterStarred ? C.yellowLight : C.surfaceAlt, color: filterStarred ? C.text : C.textSub, border:`1px solid ${filterStarred ? C.yellowBorder : C.border}`, cursor:'pointer' }}><Star size={11} fill={filterStarred ? '#FECC01' : 'none'} stroke={filterStarred ? '#FECC01' : C.textSub} /> Starred only</Button>
               {(filterVendor !== 'All' || search) && (
                 <Button variant="plain" onClick={() => { setFilterVendor('All'); setSearch('') }}
                   style={{ padding:'10px 14px', borderRadius:10, border:`1px solid ${C.border}`, background:C.surface, color:C.textSub, fontSize:13, cursor:'pointer' }}>
@@ -1205,9 +1286,19 @@ export default function Home() {
                     onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor=C.blue; el.style.boxShadow='0 2px 8px rgba(37,99,235,0.1)' }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor=C.border; el.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
-                      <div>
+                      <div style={{ display:'flex', alignItems:'flex-start', gap:10, minWidth:0 }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleStar(c.id, !c.starred) }}
+                          aria-label={c.starred ? 'Unstar' : 'Star'}
+                          title={c.starred ? 'Unstar' : 'Star'}
+                          style={{ marginTop:3, background:'none', border:'none', padding:0, cursor:'pointer', display:'inline-flex', alignItems:'center', justifyContent:'center', lineHeight:0 }}
+                        >
+                          <Star size={15} fill={c.starred ? '#FECC01' : 'none'} stroke={c.starred ? '#FECC01' : '#94A3B8'} />
+                        </button>
+                        <div style={{ minWidth:0 }}>
                         <div style={{ fontWeight:600, fontSize:15, color:C.text }}>{c.name}</div>
                         <div style={{ color:C.textMuted, fontSize:12, marginTop:1 }}>{[c.industry, c.country].filter(Boolean).join(' ÃÂÃÂÃÂÃÂ· ')}</div>
+                        </div>
                       </div>
                       <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                         {c.news_updates?.length > 0 && <span style={{ background:C.redLight, color:C.red, border:`1px solid ${C.redBorder}`, borderRadius:20, padding:'2px 9px', fontSize:11, fontWeight:500 }}>{c.news_updates.length}</span>}
@@ -1265,6 +1356,15 @@ export default function Home() {
                   )}
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => selected && toggleStar(selected.id, !selected.starred)}
+                    aria-label={selected?.starred ? 'Unstar company' : 'Star company'}
+                    title={selected?.starred ? 'Unstar — remove from Watching list' : 'Star — add to Watching list'}
+                  >
+                    <Star size={16} fill={selected?.starred ? '#FECC01' : 'none'} stroke={selected?.starred ? '#FECC01' : '#475569'} />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
