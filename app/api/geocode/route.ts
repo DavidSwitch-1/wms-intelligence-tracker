@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // Geocode pending companies via OpenStreetMap Nominatim.
 //
-// Auth: Bearer ${process.env.CRON_SECRET} — same pattern as /api/cron.
+// Auth: Bearer ${process.env.CRON_SECRET} â same pattern as /api/cron.
 //
 // Behaviour: pulls up to 50 companies that have either no latitude
 // or were last geocoded > 6 months ago, then queries Nominatim with
@@ -25,7 +25,7 @@ const supabase = createClient(
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000
 const NOMINATIM_USER_AGENT = 'wms-intelligence-tracker/1.0 (david@swi-tch.com)'
 const SPACING_MS = 1100
-const BATCH_SIZE = 50
+const BATCH_SIZE = 8
 
 function isStale(at: string | null | undefined): boolean {
   if (!at) return true
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
 }
 
 async function run(req: NextRequest) {
-  // Auth — Bearer CRON_SECRET, same pattern as /api/cron.
+  // Auth â Bearer CRON_SECRET, same pattern as /api/cron.
   const auth = req.headers.get('authorization') || ''
   const expected = `Bearer ${process.env.CRON_SECRET || ''}`
   if (!process.env.CRON_SECRET || auth !== expected) {
