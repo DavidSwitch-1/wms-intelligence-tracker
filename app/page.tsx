@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck, Pencil } from 'lucide-react'
 
 import dynamic from 'next/dynamic'
 
@@ -33,8 +33,8 @@ function localAnswer(message: string, companies: any[]): string | null {
     for (const [wms, group] of groups) {
       out.push(`**${wms}** (${group.length})`)
       for (const c of group) {
-        const meta = [c.industry, c.country].filter(Boolean).join(' ÃÂ· ')
-        out.push(`Ã¢ÂÂ¢ ${c.name}${meta ? ' Ã¢ÂÂ ' + meta : ''}`)
+        const meta = [c.industry, c.country].filter(Boolean).join(' ÃÂÃÂ· ')
+        out.push(`ÃÂ¢ÃÂÃÂ¢ ${c.name}${meta ? ' ÃÂ¢ÃÂÃÂ ' + meta : ''}`)
       }
       out.push('')
     }
@@ -61,7 +61,7 @@ function localAnswer(message: string, companies: any[]): string | null {
     const tl = t.toLowerCase()
     if (tl === 'unknown' || tl === 'unknown wms' || tl === 'an unknown wms') {
       const unknowns = companies.filter((c: any) => (c.wms_entries || []).some((w: any) => w.wms_system === 'Unknown'))
-      return fmt(unknowns, 'Unknown WMS') || 'All ' + companies.length + ' companies have a known WMS Ã¢ÂÂ research is up to date.'
+      return fmt(unknowns, 'Unknown WMS') || 'All ' + companies.length + ' companies have a known WMS ÃÂ¢ÃÂÃÂ research is up to date.'
     }
     const matches = findByWms(t)
     if (matches.length > 0) return fmt(matches, t)
@@ -71,7 +71,7 @@ function localAnswer(message: string, companies: any[]): string | null {
   if (/(?:which|what|list|show|how\s+many).{0,40}\b(?:unknown|no\s+wms|missing\s+wms)\b/i.test(msg)) {
     const unknowns = companies.filter((c: any) => (c.wms_entries || []).some((w: any) => w.wms_system === 'Unknown'))
     if (/how\s+many/i.test(msg)) return '**' + unknowns.length + '** of our ' + companies.length + ' companies have an Unknown WMS and are queued for research.'
-    return fmt(unknowns, 'Unknown WMS') || 'All companies have a known WMS Ã¢ÂÂ research is up to date.'
+    return fmt(unknowns, 'Unknown WMS') || 'All companies have a known WMS ÃÂ¢ÃÂÃÂ research is up to date.'
   }
   // 'how many on X' / 'count of X users'
   if ((m = msg.match(/how\s+many\s+(?:companies\s+)?(?:are\s+)?(?:on|using|use|with|run)\s+(.+?)\??$/i))) {
@@ -89,11 +89,11 @@ function localAnswer(message: string, companies: any[]): string | null {
     if (!co) return null
     const wmsLines = (co.wms_entries || []).map((w: any) => {
       const bits = [w.wms_system, w.vendor, w.version, w.site_name].filter(Boolean)
-      return 'Ã¢ÂÂ¢ ' + bits.join(' ÃÂ· ') + (w.status ? ' (' + w.status + ')' : '')
+      return 'ÃÂ¢ÃÂÃÂ¢ ' + bits.join(' ÃÂÃÂ· ') + (w.status ? ' (' + w.status + ')' : '')
     }).join('\n')
-    const newsLines = (co.news_updates || []).slice(0, 3).map((n: any) => 'Ã¢ÂÂ¢ ' + n.title + (n.published_at ? ' (' + new Date(n.published_at).toLocaleDateString('en-GB') + ')' : '')).join('\n')
-    const meta = [co.industry, co.country, co.region].filter(Boolean).join(' ÃÂ· ')
-    return '**' + co.name + '**' + (meta ? ' Ã¢ÂÂ ' + meta : '') + '\n\n**WMS**\n' + (wmsLines || 'Ã¢ÂÂ¢ No WMS data') + (newsLines ? '\n\n**Recent intel**\n' + newsLines : '')
+    const newsLines = (co.news_updates || []).slice(0, 3).map((n: any) => 'ÃÂ¢ÃÂÃÂ¢ ' + n.title + (n.published_at ? ' (' + new Date(n.published_at).toLocaleDateString('en-GB') + ')' : '')).join('\n')
+    const meta = [co.industry, co.country, co.region].filter(Boolean).join(' ÃÂÃÂ· ')
+    return '**' + co.name + '**' + (meta ? ' ÃÂ¢ÃÂÃÂ ' + meta : '') + '\n\n**WMS**\n' + (wmsLines || 'ÃÂ¢ÃÂÃÂ¢ No WMS data') + (newsLines ? '\n\n**Recent intel**\n' + newsLines : '')
   }
   return null
 }
@@ -174,7 +174,7 @@ export default function Home() {
   const [search, setSearch]           = useState('')
   const [filterVendor, setFilterVendor] = useState('All')
   const [messages, setMessages]       = useState<any[]>([
-    { role: 'assistant', content: "Hi! I'm your WMS Intelligence Assistant. Ask me anything Ã¢ÂÂ e.g. \"Who uses Blue Yonder Dispatcher?\", \"What WMS does DHL use?\", or \"Which companies are Unknown?\"." }
+    { role: 'assistant', content: "Hi! I'm your WMS Intelligence Assistant. Ask me anything ÃÂ¢ÃÂÃÂ e.g. \"Who uses Blue Yonder Dispatcher?\", \"What WMS does DHL use?\", or \"Which companies are Unknown?\"." }
   ])
   const [input, setInput]     = useState('')
   const [loading, setLoading] = useState(false)
@@ -211,6 +211,12 @@ export default function Home() {
   const [newCompanyIs3PL, setNewCompanyIs3PL] = useState(false)
   const [newsRecencyFilter, setNewsRecencyFilter] = useState<'12m'|'all'>('12m')
   const [selected, setSelected] = useState<any>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editForm, setEditForm] = useState<Record<string, any>>({})
+  const [editOriginal, setEditOriginal] = useState<Record<string, any>>({})
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [editSuccess, setEditSuccess] = useState<string | null>(null)
   const [form, setForm]       = useState({ name:'', industry:'', country:'', region:'', wms_system:'', vendor:'', version:'', site_name:'', notes:'' })
   const [saving, setSaving]   = useState(false)
   const [saved, setSaved]     = useState(false)
@@ -260,7 +266,7 @@ export default function Home() {
   const keySeqRef = useRef<{val:string, ts:number}>({val:'', ts:0})
   const [briefCached, setBriefCached] = useState(false)
   const [briefCachedAt, setBriefCachedAt] = useState<string|null>(null)
-  // InMail drafter state Ã¢ÂÂ mirrors the brief modal pattern.
+  // InMail drafter state ÃÂ¢ÃÂÃÂ mirrors the brief modal pattern.
   const [showInmail, setShowInmail] = useState(false)
   const [inmailCompany, setInmailCompany] = useState<any>(null)
   const [inmailLoading, setInmailLoading] = useState(false)
@@ -456,7 +462,7 @@ export default function Home() {
       }
       if (d.findings > 0) load()
     } catch {
-      if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Research failed Ã¢ÂÂ try again' }))
+      if (!silent) setResearchResults(prev => ({ ...prev, [company.id]: 'Research failed ÃÂ¢ÃÂÃÂ try again' }))
     }
     setResearching(prev => ({ ...prev, [company.id]: false }))
   }
@@ -741,7 +747,7 @@ export default function Home() {
     const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     if (days < 90) return { bg: '#E6F4EA', fg: '#1B5E20', border: '#A5D6A7', label }
     if (days < 365) return { bg: C.surfaceAlt, fg: C.textSub, border: C.border, label }
-    return { bg: C.surfaceMuted, fg: C.textMuted, border: C.border, label: label + ' ÃÂ· stale' }
+    return { bg: C.surfaceMuted, fg: C.textMuted, border: C.border, label: label + ' ÃÂÃÂ· stale' }
   }
 
   function vendorBg(v: string) {
@@ -765,7 +771,7 @@ export default function Home() {
   return (
     <div style={{ minHeight:'100vh', background:C.bg, color:C.text, fontFamily:'inherit', paddingBottom: isMobile ? 76 : 0, transition:'padding 200ms cubic-bezier(0.4,0,0.2,1)' }}>
 
-      {/* Ã¢ÂÂÃ¢ÂÂ Header Ã¢ÂÂÃ¢ÂÂ */}
+      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Header ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
       <div style={{ background:C.surface, borderBottom:`1px solid ${C.border}`, padding: isMobile ? '0 14px' : '0 28px', display:'flex', alignItems:'center', justifyContent:'space-between', height: isMobile ? 52 : 56, position:'sticky', top:0, zIndex:50, boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <div style={{ width:32, height:32, borderRadius:8, background:'#0B1C37', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, letterSpacing:0.5, color:'#FECC01', boxShadow:'inset 0 -2px 0 rgba(254,204,1,0.25)' }}>s.</div>
@@ -773,7 +779,7 @@ export default function Home() {
             <div style={{ fontWeight:700, fontSize:14, color:C.text }}>WMS Intelligence</div>
             <div style={{ color:C.textMuted, fontSize:11 }}>
               {companies.length} companies
-              {researchingCount > 0 && <span style={{ color:C.blue, marginLeft:6 }}>ÃÂ· Researching {researchingCount}...</span>}
+              {researchingCount > 0 && <span style={{ color:C.blue, marginLeft:6 }}>ÃÂÃÂ· Researching {researchingCount}...</span>}
             </div>
           </div>
         </div>
@@ -796,16 +802,16 @@ export default function Home() {
           ))}
         </nav>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ fontSize:11, color:C.textMuted }}>Updated {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : 'Ã¢ÂÂ'}</span>
+          <span style={{ fontSize:11, color:C.textMuted }}>Updated {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : 'ÃÂ¢ÃÂÃÂ'}</span>
           <Button variant="plain" onClick={load} disabled={refreshing} style={{ fontSize:12, color:C.blue, background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:6, padding:'4px 10px', cursor:refreshing?'default':'pointer', fontWeight:500, opacity:refreshing?0.6:1 }}>
-            {refreshing ? 'Ã¢ÂÂ» ...' : 'Ã¢ÂÂ» Refresh'}
+            {refreshing ? 'ÃÂ¢ÃÂÃÂ» ...' : 'ÃÂ¢ÃÂÃÂ» Refresh'}
           </Button>
         </div>
       </div>
 
       <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 28px' }}>
 
-        {/* Ã¢ÂÂÃ¢ÂÂ DATABASE TAB Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ DATABASE TAB ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab === 'dashboard' && !selected && (() => {
           const now = Date.now()
           const day7 = 7 * 24 * 60 * 60 * 1000
@@ -915,7 +921,7 @@ export default function Home() {
                       <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
                       <span style={{ fontSize:11, color:C.textMuted, fontWeight:500 }}>+{weekCompanies} {weekCompanies === 1 ? 'company' : 'companies'}, +{weekThreePLs} 3PLs this week</span>
                     </div>
-                    <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Auto-discovered by the nightly sweep Ã¢ÂÂ verify or dismiss to keep the dataset clean.</div>
+                    <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Auto-discovered by the nightly sweep ÃÂ¢ÃÂÃÂ verify or dismiss to keep the dataset clean.</div>
                     {recentDiscoveries.length === 0 ? (
                       <Card variant='inset' padding={14} style={{ marginBottom:14 }}>
                         <div style={{ fontSize:13, color:C.textSub }}>No new discoveries this week. The next sweep runs nightly at 02:00 UTC.</div>
@@ -927,7 +933,7 @@ export default function Home() {
                             <div style={{ fontSize:14, fontWeight:500, color:C.text }}>{d.name}</div>
                             <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', fontSize:11, color:C.textSub, marginTop:4 }}>
                               {d.industry && <span>{d.industry}</span>}
-                              {d.industry && d.country && <span>ÃÂ·</span>}
+                              {d.industry && d.country && <span>ÃÂÃÂ·</span>}
                               {d.country && <span>{d.country}</span>}
                               {d.is_3pl && <Pill variant='brand' size='sm'>3PL Provider</Pill>}
                             </div>
@@ -954,7 +960,7 @@ export default function Home() {
               <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies with hiring or expansion activity in the last 30 days</div>
               {hotLeads.length === 0 ? (
                 <Card style={{ padding:'24px 16px', textAlign:'center', color:C.textMuted, background:C.surface, border:`1px dashed ${C.border}`, borderRadius:10, marginBottom:24, fontSize:13 }}>
-                  No hot signals yet Ã¢ÂÂ the nightly cron at 2am UTC will surface new ones.
+                  No hot signals yet ÃÂ¢ÃÂÃÂ the nightly cron at 2am UTC will surface new ones.
                 </Card>
               ) : (
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:10, marginBottom:24 }}>
@@ -978,7 +984,7 @@ export default function Home() {
                     <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
                     <span style={{ fontSize:11, color:C.textMuted, fontWeight:500 }}>{pendingChanges.length} pending</span>
                   </div>
-                  <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies the AI thinks have moved WMS Ã¢ÂÂ review and one-click apply</div>
+                  <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies the AI thinks have moved WMS ÃÂ¢ÃÂÃÂ review and one-click apply</div>
                   <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:24 }}>
                     {pendingChanges.slice(0, 6).map((n: any) => (
                       <div key={n.id} style={{ background:C.yellowLight, border:`1px solid ${C.yellowBorder}`, borderRadius:10, padding:'12px 14px', display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
@@ -1001,14 +1007,14 @@ export default function Home() {
                 <Newspaper size={16} color={C.blue} />
                 <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Latest Intelligence</h3>
                 <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
-                <Button variant="ghost" onClick={() => gotoTab('news')} style={{ background:'transparent', border:'none', fontSize:11, color:C.blue, fontWeight:600, cursor:'pointer' }}>View all Ã¢ÂÂ</Button>
+                <Button variant="ghost" onClick={() => gotoTab('news')} style={{ background:'transparent', border:'none', fontSize:11, color:C.blue, fontWeight:600, cursor:'pointer' }}>View all ÃÂ¢ÃÂÃÂ</Button>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {sortedNews.slice(0, 5).map((n: any) => (
                   <div key={n.id} onClick={() => { setSelected(n._company); gotoTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:'10px 14px', cursor:'pointer', display:'flex', alignItems:'center', gap:10 }}>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:2 }}>{n.title}</div>
-                      <div style={{ fontSize:11, color:C.textMuted }}><span style={{ color:C.blue, fontWeight:500 }}>{n._company.name}</span> ÃÂ· {timeAgo(n.published_at || n.created_at)}</div>
+                      <div style={{ fontSize:11, color:C.textMuted }}><span style={{ color:C.blue, fontWeight:500 }}>{n._company.name}</span> ÃÂÃÂ· {timeAgo(n.published_at || n.created_at)}</div>
                     </div>
                     <Button variant="ghost" onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading} title="Draft LinkedIn post"
                       style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, padding:4, cursor:'pointer', display:'inline-flex', alignItems:'center', color:C.blue, marginRight:6 }}>
@@ -1035,7 +1041,7 @@ export default function Home() {
                   <option value="">All WMS</option>
                   <option value="Manhattan">Manhattan</option>
                   <option value="Blue Yonder">Blue Yonder</option>
-                  <option value="KÃÂ¶rber">KÃÂ¶rber</option>
+                  <option value="KÃÂÃÂ¶rber">KÃÂÃÂ¶rber</option>
                   <option value="SAP">SAP</option>
                   <option value="Other">Other</option>
                   <option value="Unknown">Unknown</option>
@@ -1060,12 +1066,12 @@ export default function Home() {
                       Click below to populate locations for your {companies.length} companies. This uses the free OpenStreetMap geocoding service and takes about a minute.
                     </div>
                     <Button variant="primary" onClick={runGeocode} disabled={geocoding}>
-                      {geocoding ? 'Geocodingâ¦' : 'Geocode now'}
+                      {geocoding ? 'GeocodingÃ¢ÂÂ¦' : 'Geocode now'}
                     </Button>
                     {geocodeResult && (
                       <div style={{ marginTop:12, fontSize:12, color:C.textSub }}>
                         {geocodeResult.geocoded} of {geocodeResult.processed} companies geocoded
-                        {geocodeResult.failed > 0 ? ` Â· ${geocodeResult.failed} failed` : ''}
+                        {geocodeResult.failed > 0 ? ` ÃÂ· ${geocodeResult.failed} failed` : ''}
                       </div>
                     )}
                   </div>
@@ -1103,8 +1109,8 @@ export default function Home() {
                       boxShadow: active ? `0 0 0 2px ${s.border}` : '0 1px 3px rgba(0,0,0,0.06)' }}>
                     <div style={{ fontSize:28, fontWeight:700, color:s.color, lineHeight:1 }}>{s.value}</div>
                     <div style={{ fontSize:12, color: active ? s.color : C.textSub, marginTop:6, fontWeight: active ? 600 : 400 }}>{s.label}</div>
-                    {active && s.filter !== 'news' && s.filter !== 'All' && <div style={{ fontSize:10, color:s.color, marginTop:2, opacity:0.7 }}>Ã¢ÂÂ Active filter</div>}
-                  {active && s.filter === 'All' && <div style={{ fontSize:10, color:s.color, marginTop:2, opacity:0.7 }}>Ã¢ÂÂ Showing all</div>}
+                    {active && s.filter !== 'news' && s.filter !== 'All' && <div style={{ fontSize:10, color:s.color, marginTop:2, opacity:0.7 }}>ÃÂ¢ÃÂÃÂ Active filter</div>}
+                  {active && s.filter === 'All' && <div style={{ fontSize:10, color:s.color, marginTop:2, opacity:0.7 }}>ÃÂ¢ÃÂÃÂ Showing all</div>}
                   </div>
                 )
               })}
@@ -1152,7 +1158,7 @@ export default function Home() {
 
             {(filterVendor !== 'All' || search) && (
               <div style={{ background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'8px 16px', marginBottom:14, fontSize:13, color:C.blue, display:'flex', justifyContent:'space-between' }}>
-                <span>{filterVendor !== 'All' ? `Vendor: ${filterVendor}` : `Search: "${search}"`} Ã¢ÂÂ {filtered.length} companies</span>
+                <span>{filterVendor !== 'All' ? `Vendor: ${filterVendor}` : `Search: "${search}"`} ÃÂ¢ÃÂÃÂ {filtered.length} companies</span>
                 <Button variant="plain" onClick={() => { setFilterVendor('All'); setSearch('') }} style={{ background:'none', border:'none', color:C.blue, cursor:'pointer', fontSize:13, fontWeight:600 }}>Clear</Button>
               </div>
             )}
@@ -1187,19 +1193,19 @@ export default function Home() {
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
                       <div>
                         <div style={{ fontWeight:600, fontSize:15, color:C.text }}>{c.name}</div>
-                        <div style={{ color:C.textMuted, fontSize:12, marginTop:1 }}>{[c.industry, c.country].filter(Boolean).join(' ÃÂ· ')}</div>
+                        <div style={{ color:C.textMuted, fontSize:12, marginTop:1 }}>{[c.industry, c.country].filter(Boolean).join(' ÃÂÃÂ· ')}</div>
                       </div>
                       <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                         {c.news_updates?.length > 0 && <span style={{ background:C.redLight, color:C.red, border:`1px solid ${C.redBorder}`, borderRadius:20, padding:'2px 9px', fontSize:11, fontWeight:500 }}>{c.news_updates.length}</span>}
                         {isResearching && <span style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:20, padding:'2px 9px', fontSize:11 }}>Researching</span>}
-                        <span style={{ color:C.textMuted, fontSize:13 }}>Ã¢ÂÂº</span>
+                        <span style={{ color:C.textMuted, fontSize:13 }}>ÃÂ¢ÃÂÃÂº</span>
                       </div>
                     </div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                       {c.wms_entries?.map((w: any) => (
                         <span key={w.id} style={{ background:vendorBg(w.vendor), color:vendorColor(w.vendor), border:`1px solid ${vendorBorder(w.vendor)}`, borderRadius:6, padding:'3px 10px', fontSize:12, fontWeight:500 }}>
                           {w.wms_system === 'Unknown' ? 'Unknown' : w.wms_system}
-                          {w.version && w.version !== w.wms_system && <span style={{ opacity:0.65, fontSize:11 }}> ÃÂ· {w.version.length > 30 ? w.version.substring(0,30)+'Ã¢ÂÂ¦' : w.version}</span>}
+                          {w.version && w.version !== w.wms_system && <span style={{ opacity:0.65, fontSize:11 }}> ÃÂÃÂ· {w.version.length > 30 ? w.version.substring(0,30)+'ÃÂ¢ÃÂÃÂ¦' : w.version}</span>}
                         </span>
                       ))}
                       {c.is_3pl && (
@@ -1223,12 +1229,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ COMPANY DETAIL PANEL Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ COMPANY DETAIL PANEL ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab === 'db' && selected && (
           <div>
             <Button variant="plain" onClick={() => setSelected(null)}
               style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', color:C.blue, cursor:'pointer', fontSize:14, fontWeight:500, marginBottom:20, padding:0 }}>
-              Ã¢ÂÂ Back to database
+              ÃÂ¢ÃÂÃÂ Back to database
             </Button>
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
@@ -1236,7 +1242,7 @@ export default function Home() {
                   <h2 style={{ margin:0, fontSize:22, fontWeight:700, color:C.text }}>{selected.name}{selected.is_3pl && (
                     <Pill variant="custom" style={{ marginLeft: 8, padding:'2px 8px', borderRadius: 999, background: C.yellowLight, border:`1px solid ${C.yellowBorder}`, color: C.text, fontSize: 11, fontWeight: 600 }}>3PL Provider</Pill>
                   )}</h2>
-                  <p style={{ margin:'4px 0 0', color:C.textSub, fontSize:14 }}>{[selected.industry, selected.country, selected.region].filter(Boolean).join(' ÃÂ· ')}</p>
+                  <p style={{ margin:'4px 0 0', color:C.textSub, fontSize:14 }}>{[selected.industry, selected.country, selected.region].filter(Boolean).join(' ÃÂÃÂ· ')}</p>
                   {selected.third_party_logistics && (
                     <div style={{ display:'flex', alignItems:'center', gap: 8, fontSize: 13, color: C.textSub, marginTop: 6 }}>
                       <Truck size={14} />
@@ -1245,6 +1251,30 @@ export default function Home() {
                   )}
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<Pencil size={14} />}
+                    onClick={() => {
+                      const wmsLatest = (selected && selected.wms_entries && selected.wms_entries[0]) || null
+                      const seed: Record<string, any> = {
+                        name: selected?.name || '',
+                        industry: selected?.industry || '',
+                        country: selected?.country || '',
+                        hq_city: selected?.hq_city || '',
+                        wms_system: (wmsLatest && wmsLatest.wms_system) || '',
+                        wms_version: (wmsLatest && wmsLatest.version) || '',
+                        third_party_logistics: selected?.third_party_logistics || '',
+                        is_3pl: !!selected?.is_3pl,
+                        notes: selected?.notes || '',
+                      }
+                      setEditForm({ ...seed })
+                      setEditOriginal({ ...seed })
+                      setEditError(null)
+                      setEditSuccess(null)
+                      setEditOpen(true)
+                    }}
+                  >Edit</Button>
                   <Button variant="plain" onClick={(e) => { e.stopPropagation(); researchCompany(selected) }}
                     disabled={researching[selected.id]}
                     className="btn-hover"
@@ -1260,21 +1290,21 @@ export default function Home() {
                     className="btn-hover"
                     style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:700, cursor: briefLoading ? 'wait' : 'pointer', height:36, opacity: briefLoading ? 0.7 : 1 }}>
                     <FileText size={14} strokeWidth={2.5} />
-                    {briefLoading && briefCompany?.id === selected.id ? 'GeneratingÃ¢ÂÂ¦' : 'Generate brief'}
+                    {briefLoading && briefCompany?.id === selected.id ? 'GeneratingÃÂ¢ÃÂÃÂ¦' : 'Generate brief'}
                   </Button>
                   <Button variant="plain" onClick={() => fetchLookalike(selected)}
                     disabled={lookalikeLoading}
                     className="btn-hover"
                     style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:C.yellowLight, color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:600, cursor:'pointer', height:36 }}>
                     <Users size={14} />
-                    {lookalikeLoading && lookalikeSource?.id === selected.id ? 'SearchingÃ¢ÂÂ¦' : 'Find similar'}
+                    {lookalikeLoading && lookalikeSource?.id === selected.id ? 'SearchingÃÂ¢ÃÂÃÂ¦' : 'Find similar'}
                   </Button>
                   <Button variant="primary" onClick={() => generateInmail(selected)}
                     disabled={inmailLoading}
                     className="btn-hover"
                     style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:700, cursor: inmailLoading ? 'wait' : 'pointer', height:36, opacity: inmailLoading ? 0.7 : 1 }}>
                     <MessageSquare size={14} strokeWidth={2.5} />
-                    {inmailLoading && inmailCompany?.id === selected.id ? 'DraftingÃ¢ÂÂ¦' : 'Draft InMail'}
+                    {inmailLoading && inmailCompany?.id === selected.id ? 'DraftingÃÂ¢ÃÂÃÂ¦' : 'Draft InMail'}
                   </Button>
                 </div>
               </div>
@@ -1293,7 +1323,7 @@ export default function Home() {
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div>
                         <div style={{ fontWeight:700, fontSize:15, color:vendorColor(w.vendor) }}>{w.wms_system}</div>
-                        <div style={{ fontSize:12, color:C.textSub, marginTop:3 }}>{[w.vendor, w.version, w.site_name].filter(Boolean).join(' ÃÂ· ')}</div>
+                        <div style={{ fontSize:12, color:C.textSub, marginTop:3 }}>{[w.vendor, w.version, w.site_name].filter(Boolean).join(' ÃÂÃÂ· ')}</div>
                       </div>
                       <span style={{ fontSize:11, padding:'3px 10px', borderRadius:20, background: w.status==='Active' ? C.greenLight : C.amberLight, color: w.status==='Active' ? C.green : C.amber, border:`1px solid ${w.status==='Active' ? C.greenBorder : C.amberBorder}`, fontWeight:500 }}>
                         {w.status}
@@ -1314,14 +1344,14 @@ export default function Home() {
                       {n.summary && <div style={{ marginTop:4, fontSize:13, color:C.textSub }}>{n.summary}</div>}
                       <div style={{ marginTop:6, fontSize:11, color:C.textMuted }}>
                         {(() => { const dc = newsDateColor(n.published_at || n.created_at); return (<span style={{ padding:'2px 8px', borderRadius:6, background:dc.bg, color:dc.fg, border:`1px solid ${dc.border}`, fontSize:11, fontWeight:500 }}>{dc.label}</span>) })()}
-                        {n.source && <span style={{ marginLeft:8 }}>ÃÂ· <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" style={{ color:C.blue, textDecoration:'none' }}>Source Ã¢ÂÂ</a></span>}
+                        {n.source && <span style={{ marginLeft:8 }}>ÃÂÃÂ· <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" style={{ color:C.blue, textDecoration:'none' }}>Source ÃÂ¢ÃÂÃÂ</a></span>}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Timeline Ã¢ÂÂ vertical chronological feed of all news_updates */}
+              {/* Timeline ÃÂ¢ÃÂÃÂ vertical chronological feed of all news_updates */}
               {(() => {
                 const tl = (selected.news_updates || [])
                   .slice()
@@ -1358,7 +1388,7 @@ export default function Home() {
                                 <div style={{ fontSize:12, marginTop:6, color:C.amber }}>Proposed change: {n.proposed_wms_system}</div>
                               )}
                               {isOpen && n.source && (
-                                <div style={{ fontSize:12, marginTop:6 }}><a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" style={{ color:C.blue, textDecoration:'none' }} onClick={e => e.stopPropagation()}>Source Ã¢ÂÂ</a></div>
+                                <div style={{ fontSize:12, marginTop:6 }}><a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" style={{ color:C.blue, textDecoration:'none' }} onClick={e => e.stopPropagation()}>Source ÃÂ¢ÃÂÃÂ</a></div>
                               )}
                             </div>
                           </div>
@@ -1384,20 +1414,20 @@ export default function Home() {
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ NEWS TAB Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ NEWS TAB ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab === 'news' && (
           <div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
               <div>
                 <h2 style={{ margin:0, fontSize:20, fontWeight:700, color:C.text }}>Intelligence Feed</h2>
-                <p style={{ margin:'4px 0 0', fontSize:13, color:C.textSub }}>All news, research findings, and WMS updates Ã¢ÂÂ newest first. Auto-refreshes every 5 minutes.</p>
+                <p style={{ margin:'4px 0 0', fontSize:13, color:C.textSub }}>All news, research findings, and WMS updates ÃÂ¢ÃÂÃÂ newest first. Auto-refreshes every 5 minutes.</p>
               </div>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                 <label style={{ fontSize:12, color:C.textSub, display:'flex', alignItems:'center', gap:6, cursor:'pointer', marginRight:8 }}><DSInput plain type="checkbox" checked={showDismissed} onChange={e => setShowDismissed(e.target.checked)} style={{ margin:0 }} />Show dismissed</label>
-                <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : 'Ã¢ÂÂ'}</span>
+                <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : 'ÃÂ¢ÃÂÃÂ'}</span>
                 <Button variant="plain" onClick={load} disabled={refreshing}
                   style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'7px 14px', fontSize:13, fontWeight:600, cursor:refreshing?'default':'pointer', opacity:refreshing?0.6:1, display:'flex', alignItems:'center', gap:6 }}>
-                  <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>Ã¢ÂÂ»</span>
+                  <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>ÃÂ¢ÃÂÃÂ»</span>
                   {refreshing ? 'Refreshing...' : 'Refresh now'}
                 </Button>
               </div>
@@ -1440,7 +1470,7 @@ export default function Home() {
                       {n.proposed_wms_system && n.status !== 'verified' && (
                         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', marginBottom:8, background:C.amberLight, border:`1px solid ${C.amberBorder}`, borderRadius:8, flexWrap:'wrap' }}>
                           <span style={{ fontSize:12, color:C.amber, fontWeight:600 }}>Proposed change:</span>
-                          <span style={{ fontSize:12, color:C.textSub }}>{(company?.wms_entries?.[0]?.wms_system) || 'Unknown'} Ã¢ÂÂ <span style={{ color:C.amber, fontWeight:600 }}>{n.proposed_wms_system}</span></span>
+                          <span style={{ fontSize:12, color:C.textSub }}>{(company?.wms_entries?.[0]?.wms_system) || 'Unknown'} ÃÂ¢ÃÂÃÂ <span style={{ color:C.amber, fontWeight:600 }}>{n.proposed_wms_system}</span></span>
                           <Button variant="plain" onClick={(e) => { e.stopPropagation(); applyChange(n.id) }} disabled={newsBusy[n.id]} style={{ marginLeft:'auto', background:C.amber, color:'#fff', border:'none', borderRadius:6, padding:'4px 12px', fontSize:11, fontWeight:600, cursor: newsBusy[n.id] ? 'default' : 'pointer', opacity: newsBusy[n.id] ? 0.5 : 1 }}>Apply change</Button>
                         </div>
                       )}
@@ -1448,12 +1478,12 @@ export default function Home() {
                       {n.summary && <div style={{ fontSize:13, color:C.textSub, marginBottom:6 }}>{n.summary}</div>}
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                         <span style={{ fontSize:12, color:C.blue, fontWeight:500 }}>{n.companyName}</span>
-                        {company?.last_researched_at && <span style={{ fontSize:11, color:C.textMuted, marginLeft:6 }}>ÃÂ· last researched {timeAgo(company.last_researched_at)}</span>}
+                        {company?.last_researched_at && <span style={{ fontSize:11, color:C.textMuted, marginLeft:6 }}>ÃÂÃÂ· last researched {timeAgo(company.last_researched_at)}</span>}
                         <Button variant="plain" onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'verified' ? 'pending' : 'verified') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'verified' ? C.greenLight : 'transparent', color: n.status === 'verified' ? C.green : C.textSub, border: `1px solid ${n.status === 'verified' ? C.greenBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>{n.status === 'verified' ? 'Verified' : 'Verify'}</Button><Button variant="plain" onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'dismissed' ? 'pending' : 'dismissed') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'dismissed' ? C.redLight : 'transparent', color: n.status === 'dismissed' ? C.red : C.textSub, border: `1px solid ${n.status === 'dismissed' ? C.redBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>{n.status === 'dismissed' ? 'Dismissed' : 'Dismiss'}</Button><Button variant="ghost" onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading}
                           style={{ background:'transparent', color:C.blue, border:`1px solid ${C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor:'pointer', fontWeight:500, marginRight:6, display:'inline-flex', alignItems:'center', gap:4 }}>
                           <Linkedin size={11} />Draft LinkedIn post
                         </Button>
-                        {n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none' }}>Source Ã¢ÂÂ</a>}
+                        {n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none' }}>Source ÃÂ¢ÃÂÃÂ</a>}
                       </div>
                     </div>
                   )
@@ -1463,12 +1493,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ CHAT TAB Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ CHAT TAB ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab === 'chat' && (
           <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, display:'flex', flexDirection:'column', height:'calc(100vh - 130px)', boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
             <div style={{ padding:'12px 20px', borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', gap:8 }}>
               <div style={{ width:8, height:8, borderRadius:'50%', background:C.green }}></div>
-              <span style={{ color:C.textSub, fontSize:13 }}>Claude connected ÃÂ· {companies.length} companies ÃÂ· web search enabled</span>
+              <span style={{ color:C.textSub, fontSize:13 }}>Claude connected ÃÂÃÂ· {companies.length} companies ÃÂÃÂ· web search enabled</span>
             </div>
             <div style={{ flex:1, overflowY:'auto', padding:20, display:'flex', flexDirection:'column', gap:14 }}>
               {messages.map((m, i) => (
@@ -1517,7 +1547,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Ã¢ÂÂÃ¢ÂÂ ADD TAB Ã¢ÂÂÃ¢ÂÂ */}
+        {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ ADD TAB ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
         {tab === 'add' && (
           <div style={{ maxWidth:680 }}>
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
@@ -1564,7 +1594,7 @@ export default function Home() {
             </div>
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
               <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>Bulk Add Companies</h2>
-              <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Paste a list of company names Ã¢ÂÂ one per line. Each is added with WMS = Unknown and queued for auto-research.</p>
+              <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Paste a list of company names ÃÂ¢ÃÂÃÂ one per line. Each is added with WMS = Unknown and queued for auto-research.</p>
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:14 }}>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Industry (applies to all)</label>
@@ -1579,17 +1609,17 @@ export default function Home() {
               <Button variant="plain" onClick={bulkImport} disabled={bulkBusy || !bulkText.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: bulkBusy || !bulkText.trim() ? 'default' : 'pointer', opacity: bulkBusy || !bulkText.trim() ? 0.5 : 1 }}>{bulkBusy ? 'Importing...' : `Import ${bulkText.split('\n').map(s => s.trim()).filter(Boolean).length} companies`}</Button>
               {bulkResult && (
                 <div style={{ marginTop:12, background: bulkResult.error ? C.redLight : C.greenLight, color: bulkResult.error ? C.red : C.green, border: `1px solid ${bulkResult.error ? C.redBorder : C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>
-                  {bulkResult.error ? `${bulkResult.error}` : `${bulkResult.added ?? 0} added ÃÂ· ${bulkResult.skipped ?? 0} skipped (duplicates)`}
+                  {bulkResult.error ? `${bulkResult.error}` : `${bulkResult.added ?? 0} added ÃÂÃÂ· ${bulkResult.skipped ?? 0} skipped (duplicates)`}
                 </div>
               )}
             </div>
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
               <h2 style={{ margin:'0 0 6px', fontSize:18, fontWeight:700, color:C.text }}>Discover New Companies</h2>
-              <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Tell Claude what kind of company you're prospecting and it'll search the web for fresh, unduplicated targets Ã¢ÂÂ with hiring-signal flags.</p>
+              <p style={{ margin:'0 0 18px', fontSize:13, color:C.textSub }}>Tell Claude what kind of company you're prospecting and it'll search the web for fresh, unduplicated targets ÃÂ¢ÃÂÃÂ with hiring-signal flags.</p>
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14, marginBottom:14 }}>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Industry / vertical</label>
-                  <DSInput plain value={suggestIndustry} onChange={e => setSuggestIndustry(e.target.value)} placeholder="3PL, Retail, Supermarket, Pharma, Ã¢ÂÂ¦" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
+                  <DSInput plain value={suggestIndustry} onChange={e => setSuggestIndustry(e.target.value)} placeholder="3PL, Retail, Supermarket, Pharma, ÃÂ¢ÃÂÃÂ¦" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                 </div>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:C.textSub, display:'block', marginBottom:6 }}>Country</label>
@@ -1608,7 +1638,7 @@ export default function Home() {
                             <span style={{ fontWeight:600, fontSize:14, color:C.text }}>{s.name}</span>
                             {signalBadge(s.signal)}
                           </div>
-                          <div style={{ fontSize:12, color:C.textMuted, marginBottom:4 }}>{[s.industry, s.country].filter(Boolean).join(' ÃÂ· ')}</div>
+                          <div style={{ fontSize:12, color:C.textMuted, marginBottom:4 }}>{[s.industry, s.country].filter(Boolean).join(' ÃÂÃÂ· ')}</div>
                           {s.rationale && <div style={{ fontSize:12, color:C.textSub }}>{s.rationale}</div>}
                         </div>
                         <Button variant="plain" onClick={() => addSuggestion(s)} disabled={addingSuggestion[s.name]} style={{ background:C.blue, color:'#fff', border:'none', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:600, cursor: addingSuggestion[s.name] ? 'default' : 'pointer', opacity: addingSuggestion[s.name] ? 0.5 : 1, flexShrink:0 }}>{addingSuggestion[s.name] ? 'Adding...' : '+ Add'}</Button>
@@ -1645,7 +1675,77 @@ export default function Home() {
         .no-scrollbar::-webkit-scrollbar{display:none}
       `}</style>
       
-      {/* Ã¢ÂÂÃ¢ÂÂ PRE-PITCH BRIEF MODAL Ã¢ÂÂÃ¢ÂÂ */}
+      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ PRE-PITCH BRIEF MODAL ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
+      <Modal isOpen={editOpen} onClose={() => setEditOpen(false)} title="Edit company" size="md">
+        {selected && (
+          <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            <DSInput label="Name" value={editForm.name || ''} onChange={(e: any) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+            <DSInput label="Industry" value={editForm.industry || ''} onChange={(e: any) => setEditForm((f) => ({ ...f, industry: e.target.value }))} />
+            <DSInput label="Country" value={editForm.country || ''} onChange={(e: any) => setEditForm((f) => ({ ...f, country: e.target.value }))} />
+            <DSInput label="HQ city" hint="City helps the map view geocode this company. Leave blank to use country-only." value={editForm.hq_city || ''} onChange={(e: any) => setEditForm((f) => ({ ...f, hq_city: e.target.value }))} />
+            <DSInput label="WMS system" value={editForm.wms_system || ''} onChange={(e: any) => setEditForm((f) => ({ ...f, wms_system: e.target.value }))} />
+            <DSInput label="WMS version" value={editForm.wms_version || ''} onChange={(e: any) => setEditForm((f) => ({ ...f, wms_version: e.target.value }))} />
+            <DSInput label="Third-party logistics provider" value={editForm.third_party_logistics || ''} onChange={(e: any) => setEditForm((f) => ({ ...f, third_party_logistics: e.target.value }))} />
+            <label style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color: PALETTE.navy, cursor:'pointer', userSelect:'none' }}>
+              <input type="checkbox" checked={!!editForm.is_3pl} onChange={(e) => setEditForm((f) => ({ ...f, is_3pl: e.target.checked }))} />
+              This company is itself a 3PL provider
+            </label>
+            <DSTextarea label="Notes" value={editForm.notes || ''} onChange={(e: any) => setEditForm((f) => ({ ...f, notes: e.target.value }))} rows={3} />
+            {editError && (
+              <div style={{ fontSize:12, color: PALETTE.danger, marginTop:4 }}>{editError}</div>
+            )}
+            {editSuccess && (
+              <div style={{ fontSize:12, color: PALETTE.navy, background: PALETTE.cream, border: '1px solid ' + PALETTE.border, padding:'6px 10px', borderRadius:8, marginTop:4 }}>{editSuccess}</div>
+            )}
+            <div style={{ display:'flex', justifyContent:'flex-end', gap:8, marginTop:8 }}>
+              <Button variant="tertiary" onClick={() => setEditOpen(false)} disabled={editSaving}>Cancel</Button>
+              <Button
+                variant="primary"
+                loading={editSaving}
+                disabled={editSaving || (function() {
+                  const keys = Object.keys(editForm)
+                  for (const k of keys) {
+                    if ((editForm as any)[k] !== (editOriginal as any)[k]) return false
+                  }
+                  return true
+                })()}
+                onClick={async () => {
+                  if (!selected) return
+                  setEditSaving(true)
+                  setEditError(null)
+                  setEditSuccess(null)
+                  try {
+                    const payload: Record<string, any> = {}
+                    const keys = ['name','industry','country','hq_city','wms_system','wms_version','third_party_logistics','is_3pl','notes']
+                    for (const k of keys) {
+                      if ((editForm as any)[k] !== (editOriginal as any)[k]) {
+                        payload[k] = (editForm as any)[k]
+                      }
+                    }
+                    const r = await fetch('/api/companies/' + selected.id, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payload),
+                    })
+                    if (!r.ok) {
+                      const j = await r.json().catch(() => ({}))
+                      throw new Error(j.error || ('HTTP ' + r.status))
+                    }
+                    setEditSuccess('Saved \u00b7 re-geocoding on next refresh')
+                    await load()
+                    setTimeout(() => { setEditOpen(false); setEditSuccess(null) }, 900)
+                  } catch (e: any) {
+                    setEditError(e?.message || 'Save failed')
+                  } finally {
+                    setEditSaving(false)
+                  }
+                }}
+              >Save</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       <Modal isOpen={showBrief} onClose={() => !briefLoading && setShowBrief(false)} bare>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 720, width:'100%', maxHeight: isMobile ? '92vh' : '85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
@@ -1657,7 +1757,7 @@ export default function Home() {
                   <div style={{ fontSize:12, color:'#7CC8C4', marginTop:2 }}>{briefCompany?.name || ''}</div>
                   {briefCached && briefCachedAt && (
                     <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
-                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached ÃÂ· {timeAgo(briefCachedAt) || 'just now'}</span>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached ÃÂÃÂ· {timeAgo(briefCachedAt) || 'just now'}</span>
                       <Button variant="ghost" onClick={() => briefCompany && generateBrief(briefCompany, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</Button>
                     </div>
                   )}
@@ -1672,7 +1772,7 @@ export default function Home() {
               {briefLoading && (
                 <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
                   <RefreshCw size={16} className="spin" />
-                  Generating briefÃ¢ÂÂ¦ this takes ~10Ã¢ÂÂ20 seconds.
+                  Generating briefÃÂ¢ÃÂÃÂ¦ this takes ~10ÃÂ¢ÃÂÃÂ20 seconds.
                 </div>
               )}
               {!briefLoading && briefError && (
@@ -1687,10 +1787,10 @@ export default function Home() {
             </div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                <div style={{ fontSize:12, color:C.textMuted }}>DB context only ÃÂ· no web search</div>
+                <div style={{ fontSize:12, color:C.textMuted }}>DB context only ÃÂÃÂ· no web search</div>
                 {briefCached && briefCompany && !briefLoading && briefText && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
-                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached ÃÂ· {timeAgo(briefCachedAt) || 'just now'}</Pill>
+                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached ÃÂÃÂ· {timeAgo(briefCachedAt) || 'just now'}</Pill>
                     <Button variant="plain" onClick={() => generateBrief(briefCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
@@ -1704,7 +1804,7 @@ export default function Home() {
           </div>
         </Modal>
 
-      {/* Ã¢ÂÂÃ¢ÂÂ INMAIL MODAL Ã¢ÂÂÃ¢ÂÂ */}
+      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ INMAIL MODAL ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
       <Modal isOpen={showInmail} onClose={() => !inmailLoading && setShowInmail(false)} bare>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 640, width:'100%', maxHeight: isMobile ? '92vh' : '85vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
@@ -1716,7 +1816,7 @@ export default function Home() {
                   <div style={{ fontSize:12, color:'#7CC8C4', marginTop:2 }}>{inmailCompany?.name || ''}</div>
                   {inmailCached && inmailCachedAt && (
                     <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
-                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached ÃÂ· {timeAgo(inmailCachedAt) || 'just now'}</span>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached ÃÂÃÂ· {timeAgo(inmailCachedAt) || 'just now'}</span>
                       <Button variant="ghost" onClick={() => inmailCompany && generateInmail(inmailCompany, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</Button>
                     </div>
                   )}
@@ -1731,7 +1831,7 @@ export default function Home() {
               {inmailLoading && (
                 <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
                   <RefreshCw size={16} className="spin" />
-                  Drafting InMailÃ¢ÂÂ¦ this takes ~5Ã¢ÂÂ10 seconds.
+                  Drafting InMailÃÂ¢ÃÂÃÂ¦ this takes ~5ÃÂ¢ÃÂÃÂ10 seconds.
                 </div>
               )}
               {!inmailLoading && inmailError && (
@@ -1745,10 +1845,10 @@ export default function Home() {
             </div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                <div style={{ fontSize:12, color:C.textMuted }}>DB context only ÃÂ· no web search ÃÂ· ~100Ã¢ÂÂ130 words</div>
+                <div style={{ fontSize:12, color:C.textMuted }}>DB context only ÃÂÃÂ· no web search ÃÂÃÂ· ~100ÃÂ¢ÃÂÃÂ130 words</div>
                 {inmailCached && inmailCompany && !inmailLoading && inmailText && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
-                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached ÃÂ· {timeAgo(inmailCachedAt) || 'just now'}</Pill>
+                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached ÃÂÃÂ· {timeAgo(inmailCachedAt) || 'just now'}</Pill>
                     <Button variant="plain" onClick={() => generateInmail(inmailCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
@@ -1762,7 +1862,7 @@ export default function Home() {
           </div>
         </Modal>
 
-      {/* Ã¢ÂÂÃ¢ÂÂ LOOKALIKE COMPANIES MODAL Ã¢ÂÂÃ¢ÂÂ */}
+      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ LOOKALIKE COMPANIES MODAL ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
       <Modal isOpen={lookalikeOpen} onClose={() => !lookalikeLoading && setLookalikeOpen(false)} bare>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius: isMobile ? '14px 14px 0 0' : 16, width:'min(640px, 100%)', maxHeight: isMobile ? '92vh' : '80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 20px 50px rgba(11,28,55,0.18)' }}>
@@ -1777,13 +1877,13 @@ export default function Home() {
               </Button>
             </div>
             <div style={{ padding:'14px 22px', overflowY:'auto', flex:1 }}>
-              {lookalikeLoading && (<div className="spin" style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>SearchingÃ¢ÂÂ¦</div>)}
+              {lookalikeLoading && (<div className="spin" style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>SearchingÃÂ¢ÃÂÃÂ¦</div>)}
               {!lookalikeLoading && lookalikeError && (<div style={{ color:C.red, fontSize:13, padding:'12px 0' }}>{lookalikeError}</div>)}
-              {!lookalikeLoading && !lookalikeError && lookalikeData.length === 0 && (<div style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>No close lookalikes found yet Ã¢ÂÂ try expanding industries via the bulk import.</div>)}
+              {!lookalikeLoading && !lookalikeError && lookalikeData.length === 0 && (<div style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>No close lookalikes found yet ÃÂ¢ÃÂÃÂ try expanding industries via the bulk import.</div>)}
               {!lookalikeLoading && lookalikeData.length > 0 && lookalikeData.slice(0,10).map((row: any) => {
                 const lk = companies.find((c: any) => c.id === row.id) || row
                 const wmsLine = (lk.wms_entries || []).map((w: any) => w.wms_system).filter(Boolean).join(' / ') || row.wms || 'Unknown'
-                const meta = [lk.industry || row.industry, lk.country || row.country, wmsLine].filter(Boolean).join(' ÃÂ· ')
+                const meta = [lk.industry || row.industry, lk.country || row.country, wmsLine].filter(Boolean).join(' ÃÂÃÂ· ')
                 const newsArr = (lk.news_updates || []).slice().sort((a: any, b: any) => new Date(b.published_at||0).getTime() - new Date(a.published_at||0).getTime())
                 const lastNews = newsArr[0]?.published_at
                 const since30 = Date.now() - 30*24*60*60*1000
@@ -1811,7 +1911,7 @@ export default function Home() {
           </div>
         </Modal>
 
-      {/* Ã¢ÂÂÃ¢ÂÂ LINKEDIN POST DRAFTS MODAL Ã¢ÂÂÃ¢ÂÂ */}
+      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ LINKEDIN POST DRAFTS MODAL ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
       <Modal isOpen={linkedinModalOpen} onClose={() => !linkedinLoading && setLinkedinModalOpen(false)} bare>
           <div onClick={(e) => e.stopPropagation()}
             style={{ background:C.surface, borderRadius: isMobile ? '14px 14px 0 0' : 16, maxWidth: isMobile ? '100%' : 780, width:'100%', maxHeight: isMobile ? '94vh' : '88vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 50px rgba(0,0,0,0.25)', border:`1px solid ${C.border}` }}>
@@ -1823,7 +1923,7 @@ export default function Home() {
                   <div style={{ fontSize:12, color:'#7CC8C4', marginTop:2 }}>{linkedinNewsTitle}</div>
                   {linkedinCached && linkedinCachedAt && (
                     <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
-                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached ÃÂ· {timeAgo(linkedinCachedAt) || 'just now'}</span>
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached ÃÂÃÂ· {timeAgo(linkedinCachedAt) || 'just now'}</span>
                       <Button variant="ghost" onClick={() => linkedinNewsId && generateLinkedInPosts({id:linkedinNewsId, title:linkedinNewsTitle}, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</Button>
                     </div>
                   )}
@@ -1838,7 +1938,7 @@ export default function Home() {
               {linkedinLoading && (
                 <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
                   <RefreshCw size={16} className="spin" />
-                  Drafting three postsÃ¢ÂÂ¦ this takes ~10Ã¢ÂÂ20 seconds.
+                  Drafting three postsÃÂ¢ÃÂÃÂ¦ this takes ~10ÃÂ¢ÃÂÃÂ20 seconds.
                 </div>
               )}
               {linkedinError && (
@@ -1856,7 +1956,7 @@ export default function Home() {
                     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', background:'#0B1C37', color:'#fff' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                         <span style={{ fontSize:11, fontWeight:700, letterSpacing:'0.06em', color:'#FECC01' }}>{labels[v]}</span>
-                        <span style={{ fontSize:11, color:'#7CC8C4' }}>ÃÂ· {captions[v]}</span>
+                        <span style={{ fontSize:11, color:'#7CC8C4' }}>ÃÂÃÂ· {captions[v]}</span>
                       </div>
                       <Button variant="plain" onClick={() => copyLinkedInVariant(v)}
                         style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px', borderRadius:6, background: copiedVariant === v ? '#7CC8C4' : '#FECC01', color:'#0B1C37', border:'none', fontSize:11, fontWeight:700, cursor:'pointer' }}>
@@ -1873,10 +1973,10 @@ export default function Home() {
             </div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
               <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
-                <div style={{ fontSize:12, color:C.textMuted }}>DB context only ÃÂ· no web search</div>
+                <div style={{ fontSize:12, color:C.textMuted }}>DB context only ÃÂÃÂ· no web search</div>
                 {linkedinCached && linkedinNewsId && !linkedinLoading && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
-                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached ÃÂ· {timeAgo(linkedinCachedAt) || 'just now'}</Pill>
+                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached ÃÂÃÂ· {timeAgo(linkedinCachedAt) || 'just now'}</Pill>
                     <Button variant="plain" onClick={() => generateLinkedInPosts({ id: linkedinNewsId, title: linkedinNewsTitle }, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
@@ -1912,7 +2012,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Ã¢ÂÂÃ¢ÂÂ Mobile-only bottom tab bar Ã¢ÂÂÃ¢ÂÂ */}
+      {/* ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ Mobile-only bottom tab bar ÃÂ¢ÃÂÃÂÃÂ¢ÃÂÃÂ */}
       {isMobile && (
         <nav role="tablist" aria-label="Main navigation" style={{
           position: 'fixed',
