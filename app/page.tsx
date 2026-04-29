@@ -1121,7 +1121,7 @@ export default function Home() {
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
                 <div>
                   <h2 style={{ margin:0, fontSize:22, fontWeight:700, color:C.text }}>{selected.name}{selected.is_3pl && (
-                    <span style={{ marginLeft: 8, padding:'2px 8px', borderRadius: 999, background: C.yellowLight, border:`1px solid ${C.yellowBorder}`, color: C.text, fontSize: 11, fontWeight: 600 }}>3PL Provider</span>
+                    <Pill variant="custom" style={{ marginLeft: 8, padding:'2px 8px', borderRadius: 999, background: C.yellowLight, border:`1px solid ${C.yellowBorder}`, color: C.text, fontSize: 11, fontWeight: 600 }}>3PL Provider</Pill>
                   )}</h2>
                   <p style={{ margin:'4px 0 0', color:C.textSub, fontSize:14 }}>{[selected.industry, selected.country, selected.region].filter(Boolean).join(' · ')}</p>
                   {selected.third_party_logistics && (
@@ -1577,7 +1577,7 @@ export default function Home() {
                 <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search</div>
                 {briefCached && briefCompany && !briefLoading && briefText && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
-                    <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(briefCachedAt) || 'just now'}</span>
+                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(briefCachedAt) || 'just now'}</Pill>
                     <Button variant="plain" onClick={() => generateBrief(briefCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
@@ -1635,7 +1635,7 @@ export default function Home() {
                 <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search · ~100–130 words</div>
                 {inmailCached && inmailCompany && !inmailLoading && inmailText && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
-                    <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(inmailCachedAt) || 'just now'}</span>
+                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(inmailCachedAt) || 'just now'}</Pill>
                     <Button variant="plain" onClick={() => generateInmail(inmailCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
@@ -1763,7 +1763,7 @@ export default function Home() {
                 <div style={{ fontSize:12, color:C.textMuted }}>DB context only · no web search</div>
                 {linkedinCached && linkedinNewsId && !linkedinLoading && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
-                    <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(linkedinCachedAt) || 'just now'}</span>
+                    <Pill variant="custom" style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(linkedinCachedAt) || 'just now'}</Pill>
                     <Button variant="plain" onClick={() => generateLinkedInPosts({ id: linkedinNewsId, title: linkedinNewsTitle }, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
