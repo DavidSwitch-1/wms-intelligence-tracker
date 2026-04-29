@@ -808,7 +808,7 @@ export default function Home() {
                 const StatusIcon = ageHrs < 24 ? CheckCircle2 : AlertCircle
                 return (
                   <div style={{ position:'relative', marginBottom:14 }}>
-                    <div onClick={() => setCronExpanded(v => !v)}
+                    <Card onClick={() => setCronExpanded(v => !v)}
                       style={{ display:'flex', alignItems:'center', gap:14, padding:'10px 14px', background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, cursor:'pointer', fontSize:12 }}>
                       <span style={{ display:'inline-flex', alignItems:'center', gap:6, color:dotColor, fontWeight:600 }}>
                         <span style={{ width:8, height:8, borderRadius:'50%', background:dotColor }} />
@@ -817,26 +817,26 @@ export default function Home() {
                       <span style={{ color:C.textSub }}>Last sweep: <strong style={{ color:C.text }}>{lastIso ? timeAgo(lastIso) : 'never'}</strong></span>
                       <span style={{ color:C.textSub }}>Signals 24h: <strong style={{ color:C.text }}>{cronHealth.signals_24h ?? 0}</strong></span>
                       <RefreshCw size={12} style={{ color:C.textMuted, marginLeft:'auto' }} />
-                    </div>
+                    </Card>
                     {cronExpanded && (
-                      <div style={{ marginTop:6, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 14px', fontSize:11, color:C.textSub, lineHeight:1.7 }}>
+                      <Card style={{ marginTop:6, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 14px', fontSize:11, color:C.textSub, lineHeight:1.7 }}>
                         <div>last_sweep_at: <strong style={{color:C.text}}>{cronHealth.last_sweep_at || 'never'}</strong></div>
                         <div>signals_24h: <strong style={{color:C.text}}>{cronHealth.signals_24h ?? 0}</strong></div>
                         <div>sweeps_24h: <strong style={{color:C.text}}>{cronHealth.sweeps_24h ?? 0}</strong></div>
                         <div>runs_total: <strong style={{color:C.text}}>{cronHealth.runs_total ?? 0}</strong></div>
                         <div>last_results: <strong style={{color:C.text}}>{cronHealth.last_results ?? 0}</strong></div>
                         <div>status: <strong style={{color:C.text}}>{cronHealth.status || 'unknown'}</strong></div>
-                      </div>
+                      </Card>
                     )}
                   </div>
                 )
               })()}
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? 8 : 10, marginBottom:24 }}>
                 {stats.map(s => (
-                  <div key={s.label} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
+                  <Card key={s.label} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
                     <div style={{ fontSize:11, color:C.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>{s.label}</div>
                     <div style={{ fontSize:26, fontWeight:700, color:s.accent, marginTop:4, lineHeight:1 }}>{s.value}</div>
-                  </div>
+                  </Card>
                 ))}
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, marginTop:8 }}>
@@ -847,20 +847,20 @@ export default function Home() {
               </div>
               <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies with hiring or expansion activity in the last 30 days</div>
               {hotLeads.length === 0 ? (
-                <div style={{ padding:'24px 16px', textAlign:'center', color:C.textMuted, background:C.surface, border:`1px dashed ${C.border}`, borderRadius:10, marginBottom:24, fontSize:13 }}>
+                <Card style={{ padding:'24px 16px', textAlign:'center', color:C.textMuted, background:C.surface, border:`1px dashed ${C.border}`, borderRadius:10, marginBottom:24, fontSize:13 }}>
                   No hot signals yet — the nightly cron at 2am UTC will surface new ones.
-                </div>
+                </Card>
               ) : (
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:10, marginBottom:24 }}>
                   {hotLeads.slice(0, 12).map((n: any) => (
-                    <div key={n.id} onClick={() => { setSelected(n._company); gotoTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', cursor:'pointer', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
+                    <Card key={n.id} onClick={() => { setSelected(n._company); gotoTab('db') }} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', cursor:'pointer', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
                         {signalBadge(n.signal_type)}
                         <span style={{ fontSize:11, color:C.textMuted, marginLeft:'auto' }}>{timeAgo(n.published_at || n.created_at)}</span>
                       </div>
                       <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>{n._company.name}</div>
                       <div style={{ fontSize:12, color:C.textSub, lineHeight:1.4 }}>{n.title}</div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
