@@ -29,7 +29,7 @@ export const PALETTE = {
 /* ============================================================
  * Button
  * ============================================================ */
-export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'danger'
+export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'ghost' | 'danger' | 'plain'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'size'> {
@@ -70,10 +70,13 @@ export function Button({
     tertiary: { background: 'transparent', color: PALETTE.navy, border: '1px solid transparent' },
     ghost: { background: 'transparent', color: PALETTE.navy, border: '1px solid transparent' },
     danger: { background: PALETTE.dangerSoft, color: PALETTE.danger, border: '1px solid ' + PALETTE.danger },
+    plain: {},
   }
   const isIconOnly = !children && !!(leftIcon || rightIcon)
   const minTouch = isMobile ? 44 : s.h
-  const composed: CSSProperties = {
+  const composed: CSSProperties = variant === 'plain'
+    ? { ...style }
+    : {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -103,6 +106,7 @@ export function Button({
       onBlur={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.boxShadow = 'none'; rest.onBlur?.(e) }}
       onMouseEnter={(e) => {
         if (disabled || loading) return
+        if (variant === 'plain') { rest.onMouseEnter?.(e); return }
         const el = e.currentTarget
         if (variant === 'primary') el.style.background = PALETTE.yellowDeep
         else if (variant === 'secondary') el.style.background = PALETTE.cream
@@ -111,6 +115,7 @@ export function Button({
         rest.onMouseEnter?.(e)
       }}
       onMouseLeave={(e) => {
+        if (variant === 'plain') { rest.onMouseLeave?.(e); return }
         const el = e.currentTarget
         el.style.background = (variants[variant].background as string) || 'transparent'
         rest.onMouseLeave?.(e)

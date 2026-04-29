@@ -752,20 +752,20 @@ export default function Home() {
             ['news',`News${allNews.length > 0 ? ` (${allNews.length})` : ''}`, Newspaper],
             ['add','Add Entry', Plus],
           ] as [typeof tab, string, any][]).map(([t, label, Icon]) => (
-            <button key={t} onClick={() => { gotoTab(t); setSelected(null) }}
+            <Button variant="plain" key={t} onClick={() => { gotoTab(t); setSelected(null) }}
               style={{ padding:'7px 16px', borderRadius:8, fontSize:13, cursor:'pointer', border:'none',
                 background: tab===t ? C.blueLight : 'transparent',
                 color: tab===t ? C.blue : C.textSub,
                 fontWeight: tab===t ? 600 : 400 }}>
               <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><Icon size={14} />{label}</span>
-            </button>
+            </Button>
           ))}
         </nav>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:11, color:C.textMuted }}>Updated {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '—'}</span>
-          <button onClick={load} disabled={refreshing} style={{ fontSize:12, color:C.blue, background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:6, padding:'4px 10px', cursor:refreshing?'default':'pointer', fontWeight:500, opacity:refreshing?0.6:1 }}>
+          <Button variant="plain" onClick={load} disabled={refreshing} style={{ fontSize:12, color:C.blue, background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:6, padding:'4px 10px', cursor:refreshing?'default':'pointer', fontWeight:500, opacity:refreshing?0.6:1 }}>
             {refreshing ? '↻ ...' : '↻ Refresh'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -884,8 +884,8 @@ export default function Home() {
                             <span style={{ color:C.yellow, fontWeight:600 }}>{n.proposed_wms_system}</span>
                           </div>
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); applyChange(n.id) }} disabled={newsBusy[n.id]} style={{ background:C.yellowBorder, color:C.text, border:'none', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:700, cursor: newsBusy[n.id] ? 'default' : 'pointer', opacity: newsBusy[n.id] ? 0.5 : 1 }}>Apply change</button>
-                        <button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, 'dismissed') }} disabled={newsBusy[n.id]} style={{ background:'transparent', color:C.textSub, border:`1px solid ${C.border}`, borderRadius:8, padding:'7px 12px', fontSize:12, fontWeight:500, cursor:'pointer' }}>Dismiss</button>
+                        <Button variant="plain" onClick={(e) => { e.stopPropagation(); applyChange(n.id) }} disabled={newsBusy[n.id]} style={{ background:C.yellowBorder, color:C.text, border:'none', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:700, cursor: newsBusy[n.id] ? 'default' : 'pointer', opacity: newsBusy[n.id] ? 0.5 : 1 }}>Apply change</Button>
+                        <Button variant="ghost" onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, 'dismissed') }} disabled={newsBusy[n.id]} style={{ background:'transparent', color:C.textSub, border:`1px solid ${C.border}`, borderRadius:8, padding:'7px 12px', fontSize:12, fontWeight:500, cursor:'pointer' }}>Dismiss</Button>
                       </div>
                     ))}
                   </div>
@@ -895,7 +895,7 @@ export default function Home() {
                 <Newspaper size={16} color={C.blue} />
                 <h3 style={{ margin:0, fontSize:14, fontWeight:700, color:C.text, letterSpacing:'-0.01em' }}>Latest Intelligence</h3>
                 <div style={{ height:1, flex:1, background:C.border, marginLeft:6 }} />
-                <button onClick={() => gotoTab('news')} style={{ background:'transparent', border:'none', fontSize:11, color:C.blue, fontWeight:600, cursor:'pointer' }}>View all →</button>
+                <Button variant="ghost" onClick={() => gotoTab('news')} style={{ background:'transparent', border:'none', fontSize:11, color:C.blue, fontWeight:600, cursor:'pointer' }}>View all →</Button>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {sortedNews.slice(0, 5).map((n: any) => (
@@ -904,10 +904,10 @@ export default function Home() {
                       <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:2 }}>{n.title}</div>
                       <div style={{ fontSize:11, color:C.textMuted }}><span style={{ color:C.blue, fontWeight:500 }}>{n._company.name}</span> · {timeAgo(n.published_at || n.created_at)}</div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading} title="Draft LinkedIn post"
+                    <Button variant="ghost" onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading} title="Draft LinkedIn post"
                       style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:6, padding:4, cursor:'pointer', display:'inline-flex', alignItems:'center', color:C.blue, marginRight:6 }}>
                       <Linkedin size={12} />
-                    </button>
+                    </Button>
                     {signalBadge(n.signal_type)}
                   </div>
                 ))}
@@ -954,7 +954,7 @@ export default function Home() {
                     <code style={{ display:'block', padding:12, background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, fontSize:11, fontFamily:'ui-monospace, "SF Mono", Consolas, monospace', color:C.text, marginBottom:12, wordBreak:'break-all' }}>
                       {`curl -H "Authorization: Bearer $CRON_SECRET" -X POST `}{typeof window !== 'undefined' ? window.location.origin : ''}{`/api/geocode`}
                     </code>
-                    <button onClick={() => { try { navigator.clipboard.writeText(`curl -H "Authorization: Bearer $CRON_SECRET" -X POST ${window.location.origin}/api/geocode`) } catch(_) {} }} style={{ padding:'6px 12px', background:C.yellowLight, border:`1px solid ${C.yellowBorder}`, borderRadius:6, fontSize:11, color:C.text, cursor:'pointer' }}>Copy command</button>
+                    <Button variant="plain" onClick={() => { try { navigator.clipboard.writeText(`curl -H "Authorization: Bearer $CRON_SECRET" -X POST ${window.location.origin}/api/geocode`) } catch(_) {} }} style={{ padding:'6px 12px', background:C.yellowLight, border:`1px solid ${C.yellowBorder}`, borderRadius:6, fontSize:11, color:C.text, cursor:'pointer' }}>Copy command</Button>
                   </div>
                 </div>
               )}
@@ -1002,16 +1002,16 @@ export default function Home() {
               {savedViews.map(v => (
                 <span key={v.id} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 4px 4px 10px', borderRadius:99, background:C.surfaceAlt, border:`1px solid ${C.border}`, fontSize:12, color:C.textSub }}>
                   <span onClick={() => { setFilterVendor(v.filters.wms || 'All'); setSearch(v.filters.query || ''); setSelected(null); gotoTab('db') }} style={{ cursor:'pointer', fontWeight:600 }}>{v.name}</span>
-                  <button onClick={() => { if(confirm('Delete saved view "' + v.name + '"?')) setSavedViews(prev => prev.filter(p => p.id !== v.id)) }}
+                  <Button variant="ghost" onClick={() => { if(confirm('Delete saved view "' + v.name + '"?')) setSavedViews(prev => prev.filter(p => p.id !== v.id)) }}
                     style={{ display:'flex', alignItems:'center', justifyContent:'center', width:18, height:18, padding:0, border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', borderRadius:99 }}>
                     <X size={11} />
-                  </button>
+                  </Button>
                 </span>
               ))}
-              <button onClick={() => { if (filterVendor === 'All' && !search) { alert('Set a filter or search first, then save the view.'); return } const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined } }]) }}
+              <Button variant="ghost" onClick={() => { if (filterVendor === 'All' && !search) { alert('Set a filter or search first, then save the view.'); return } const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined } }]) }}
                 style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:99, background:'transparent', border:`1px dashed ${C.borderHov}`, fontSize:12, color:C.textSub, cursor:'pointer', fontWeight:600 }}>
                 <Plus size={11} /> Save current view
-              </button>
+              </Button>
               {savedViews.length === 0 && (<span style={{ fontSize:11, color:C.textMuted, marginLeft:4 }}>Save filter combos here for one-click recall.</span>)}
             </div>
 
@@ -1028,19 +1028,19 @@ export default function Home() {
                 {['All','Blue Yonder','Manhattan Associates','SAP','Oracle','Unknown','In-House'].map(v =>
                   <option key={v} value={v}>{v}</option>)}
               </select>
-              <button onClick={()=>setFilter3pl(filter3pl === 'has' ? '' : 'has')} style={{ padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filter3pl === 'has' ? C.yellowLight : C.surfaceAlt, color: filter3pl === 'has' ? C.text : C.textSub, border:`1px solid ${filter3pl === 'has' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Has 3PL</button>
-              <button onClick={()=>setFilter3pl(filter3pl === 'is' ? '' : 'is')} style={{ padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filter3pl === 'is' ? C.yellowLight : C.surfaceAlt, color: filter3pl === 'is' ? C.text : C.textSub, border:`1px solid ${filter3pl === 'is' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Is 3PL</button>
+              <Button variant="plain" onClick={()=>setFilter3pl(filter3pl === 'has' ? '' : 'has')} style={{ padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filter3pl === 'has' ? C.yellowLight : C.surfaceAlt, color: filter3pl === 'has' ? C.text : C.textSub, border:`1px solid ${filter3pl === 'has' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Has 3PL</Button>
+              <Button variant="plain" onClick={()=>setFilter3pl(filter3pl === 'is' ? '' : 'is')} style={{ padding:'4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: filter3pl === 'is' ? C.yellowLight : C.surfaceAlt, color: filter3pl === 'is' ? C.text : C.textSub, border:`1px solid ${filter3pl === 'is' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Is 3PL</Button>
               {(filterVendor !== 'All' || search) && (
-                <button onClick={() => { setFilterVendor('All'); setSearch('') }}
+                <Button variant="plain" onClick={() => { setFilterVendor('All'); setSearch('') }}
                   style={{ padding:'10px 14px', borderRadius:10, border:`1px solid ${C.border}`, background:C.surface, color:C.textSub, fontSize:13, cursor:'pointer' }}>
-                  Clear</button>
+                  Clear</Button>
               )}
             </div>
 
             {(filterVendor !== 'All' || search) && (
               <div style={{ background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'8px 16px', marginBottom:14, fontSize:13, color:C.blue, display:'flex', justifyContent:'space-between' }}>
                 <span>{filterVendor !== 'All' ? `Vendor: ${filterVendor}` : `Search: "${search}"`} — {filtered.length} companies</span>
-                <button onClick={() => { setFilterVendor('All'); setSearch('') }} style={{ background:'none', border:'none', color:C.blue, cursor:'pointer', fontSize:13, fontWeight:600 }}>Clear</button>
+                <Button variant="plain" onClick={() => { setFilterVendor('All'); setSearch('') }} style={{ background:'none', border:'none', color:C.blue, cursor:'pointer', fontSize:13, fontWeight:600 }}>Clear</Button>
               </div>
             )}
 
@@ -1053,10 +1053,10 @@ export default function Home() {
                     {researchingCount > 0 ? `Auto-researching ${researchingCount} in background...` : 'Auto-research runs on load for up to 20 at a time'}
                   </span>
                 </div>
-                <button onClick={() => { setFilterVendor('Unknown'); setSearch('') }}
+                <Button variant="plain" onClick={() => { setFilterVendor('Unknown'); setSearch('') }}
                   style={{ background:C.amber, color:'#fff', border:'none', borderRadius:6, padding:'5px 12px', fontSize:12, fontWeight:600, cursor:'pointer' }}>
                   View unknowns
-                </button>
+                </Button>
               </div>
             )}
 
@@ -1113,10 +1113,10 @@ export default function Home() {
         {/* ── COMPANY DETAIL PANEL ── */}
         {tab === 'db' && selected && (
           <div>
-            <button onClick={() => setSelected(null)}
+            <Button variant="plain" onClick={() => setSelected(null)}
               style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', color:C.blue, cursor:'pointer', fontSize:14, fontWeight:500, marginBottom:20, padding:0 }}>
               ← Back to database
-            </button>
+            </Button>
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
                 <div>
@@ -1132,37 +1132,37 @@ export default function Home() {
                   )}
                 </div>
                 <div style={{ display:'flex', gap:8 }}>
-                  <button onClick={(e) => { e.stopPropagation(); researchCompany(selected) }}
+                  <Button variant="plain" onClick={(e) => { e.stopPropagation(); researchCompany(selected) }}
                     disabled={researching[selected.id]}
                     className="btn-hover"
                     style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background:researching[selected.id] ? C.grayLight : C.surfaceAlt, color: researching[selected.id] ? C.textMuted : C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:600, height:36, cursor: researching[selected.id] ? 'default' : 'pointer', opacity: researching[selected.id] ? 0.6 : 1 }}>
                     {researching[selected.id] ? 'Researching...' : selected.wms_entries?.some((w:any) => w.wms_system === 'Unknown') ? 'Research WMS' : 'Check for news'}
-                  </button>
-                  <button onClick={() => { setInput(`Tell me everything about ${selected.name}'s WMS setup, any recent news, and whether our records are current.`); gotoTab('chat') }}
+                  </Button>
+                  <Button variant="plain" onClick={() => { setInput(`Tell me everything about ${selected.name}'s WMS setup, any recent news, and whether our records are current.`); gotoTab('chat') }}
                     className="btn-hover"
                     style={{ padding:'8px 18px', borderRadius:8, background:C.blue, color:'#fff', border:`1px solid ${C.blue}`, fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, height:36 }}>Ask AI
-                  </button>
-                  <button onClick={() => generateBrief(selected)}
+                  </Button>
+                  <Button variant="primary" onClick={() => generateBrief(selected)}
                     disabled={briefLoading}
                     className="btn-hover"
                     style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:700, cursor: briefLoading ? 'wait' : 'pointer', height:36, opacity: briefLoading ? 0.7 : 1 }}>
                     <FileText size={14} strokeWidth={2.5} />
                     {briefLoading && briefCompany?.id === selected.id ? 'Generating…' : 'Generate brief'}
-                  </button>
-                  <button onClick={() => fetchLookalike(selected)}
+                  </Button>
+                  <Button variant="plain" onClick={() => fetchLookalike(selected)}
                     disabled={lookalikeLoading}
                     className="btn-hover"
                     style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:C.yellowLight, color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:600, cursor:'pointer', height:36 }}>
                     <Users size={14} />
                     {lookalikeLoading && lookalikeSource?.id === selected.id ? 'Searching…' : 'Find similar'}
-                  </button>
-                  <button onClick={() => generateInmail(selected)}
+                  </Button>
+                  <Button variant="primary" onClick={() => generateInmail(selected)}
                     disabled={inmailLoading}
                     className="btn-hover"
                     style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 18px', borderRadius:8, background:'#FECC01', color:'#0B1C37', border:'1px solid #E0B400', fontSize:13, fontWeight:700, cursor: inmailLoading ? 'wait' : 'pointer', height:36, opacity: inmailLoading ? 0.7 : 1 }}>
                     <MessageSquare size={14} strokeWidth={2.5} />
                     {inmailLoading && inmailCompany?.id === selected.id ? 'Drafting…' : 'Draft InMail'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -1253,9 +1253,9 @@ export default function Home() {
                       })}
                     </div>
                     {tl.length > 25 && (
-                      <button onClick={() => setTimelineExpanded(v => !v)} style={{ marginTop:8, background:'transparent', color:C.blue, border:`1px solid ${C.border}`, borderRadius:6, padding:'4px 12px', fontSize:12, cursor:'pointer', fontWeight:500 }}>
+                      <Button variant="ghost" onClick={() => setTimelineExpanded(v => !v)} style={{ marginTop:8, background:'transparent', color:C.blue, border:`1px solid ${C.border}`, borderRadius:6, padding:'4px 12px', fontSize:12, cursor:'pointer', fontWeight:500 }}>
                         {timelineExpanded ? 'Show first 25' : `Show all (${tl.length})`}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )
@@ -1282,11 +1282,11 @@ export default function Home() {
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                 <label style={{ fontSize:12, color:C.textSub, display:'flex', alignItems:'center', gap:6, cursor:'pointer', marginRight:8 }}><input type="checkbox" checked={showDismissed} onChange={e => setShowDismissed(e.target.checked)} style={{ margin:0 }} />Show dismissed</label>
                 <span style={{ fontSize:12, color:C.textMuted }}>Last updated: {mounted && lastRefresh ? lastRefresh.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '—'}</span>
-                <button onClick={load} disabled={refreshing}
+                <Button variant="plain" onClick={load} disabled={refreshing}
                   style={{ background:C.blueLight, color:C.blue, border:`1px solid ${C.blueBorder}`, borderRadius:8, padding:'7px 14px', fontSize:13, fontWeight:600, cursor:refreshing?'default':'pointer', opacity:refreshing?0.6:1, display:'flex', alignItems:'center', gap:6 }}>
                   <span style={{ display:'inline-block', animation:refreshing?'spin 0.8s linear infinite':'none' }}>↻</span>
                   {refreshing ? 'Refreshing...' : 'Refresh now'}
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -1299,8 +1299,8 @@ export default function Home() {
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 <div style={{ display:'flex', gap: 6, marginBottom: 12 }}>
-                  <button onClick={()=>setNewsRecencyFilter('12m')} style={{ padding:'4px 10px', borderRadius:999, fontSize:12, fontWeight:500, background: newsRecencyFilter==='12m' ? C.yellowLight : C.surfaceAlt, color: newsRecencyFilter==='12m' ? C.text : C.textSub, border:`1px solid ${newsRecencyFilter==='12m' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Last 12 months</button>
-                  <button onClick={()=>setNewsRecencyFilter('all')} style={{ padding:'4px 10px', borderRadius:999, fontSize:12, fontWeight:500, background: newsRecencyFilter==='all' ? C.yellowLight : C.surfaceAlt, color: newsRecencyFilter==='all' ? C.text : C.textSub, border:`1px solid ${newsRecencyFilter==='all' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>All time</button>
+                  <Button variant="plain" onClick={()=>setNewsRecencyFilter('12m')} style={{ padding:'4px 10px', borderRadius:999, fontSize:12, fontWeight:500, background: newsRecencyFilter==='12m' ? C.yellowLight : C.surfaceAlt, color: newsRecencyFilter==='12m' ? C.text : C.textSub, border:`1px solid ${newsRecencyFilter==='12m' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>Last 12 months</Button>
+                  <Button variant="plain" onClick={()=>setNewsRecencyFilter('all')} style={{ padding:'4px 10px', borderRadius:999, fontSize:12, fontWeight:500, background: newsRecencyFilter==='all' ? C.yellowLight : C.surfaceAlt, color: newsRecencyFilter==='all' ? C.text : C.textSub, border:`1px solid ${newsRecencyFilter==='all' ? C.yellowBorder : C.border}`, cursor:'pointer' }}>All time</Button>
                 </div>
                 {allNews.filter((n: any) => { if (n.archived) return false; if (newsRecencyFilter === '12m') { const d = new Date(n.published_at || n.created_at); if (!isNaN(d.getTime()) && (Date.now() - d.getTime()) > 365 * 86400000) return false } return true }).map((n: any, i: number) => {
                   const company = companies.find(c => c.id === n.companyId)
@@ -1328,7 +1328,7 @@ export default function Home() {
                         <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', marginBottom:8, background:C.amberLight, border:`1px solid ${C.amberBorder}`, borderRadius:8, flexWrap:'wrap' }}>
                           <span style={{ fontSize:12, color:C.amber, fontWeight:600 }}>Proposed change:</span>
                           <span style={{ fontSize:12, color:C.textSub }}>{(company?.wms_entries?.[0]?.wms_system) || 'Unknown'} → <span style={{ color:C.amber, fontWeight:600 }}>{n.proposed_wms_system}</span></span>
-                          <button onClick={(e) => { e.stopPropagation(); applyChange(n.id) }} disabled={newsBusy[n.id]} style={{ marginLeft:'auto', background:C.amber, color:'#fff', border:'none', borderRadius:6, padding:'4px 12px', fontSize:11, fontWeight:600, cursor: newsBusy[n.id] ? 'default' : 'pointer', opacity: newsBusy[n.id] ? 0.5 : 1 }}>Apply change</button>
+                          <Button variant="plain" onClick={(e) => { e.stopPropagation(); applyChange(n.id) }} disabled={newsBusy[n.id]} style={{ marginLeft:'auto', background:C.amber, color:'#fff', border:'none', borderRadius:6, padding:'4px 12px', fontSize:11, fontWeight:600, cursor: newsBusy[n.id] ? 'default' : 'pointer', opacity: newsBusy[n.id] ? 0.5 : 1 }}>Apply change</Button>
                         </div>
                       )}
                       <div style={{ fontWeight:600, fontSize:14, color:C.text, marginBottom:4 }}>{n.title}</div>
@@ -1336,10 +1336,10 @@ export default function Home() {
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                         <span style={{ fontSize:12, color:C.blue, fontWeight:500 }}>{n.companyName}</span>
                         {company?.last_researched_at && <span style={{ fontSize:11, color:C.textMuted, marginLeft:6 }}>· last researched {timeAgo(company.last_researched_at)}</span>}
-                        <button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'verified' ? 'pending' : 'verified') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'verified' ? C.greenLight : 'transparent', color: n.status === 'verified' ? C.green : C.textSub, border: `1px solid ${n.status === 'verified' ? C.greenBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>{n.status === 'verified' ? 'Verified' : 'Verify'}</button><button onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'dismissed' ? 'pending' : 'dismissed') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'dismissed' ? C.redLight : 'transparent', color: n.status === 'dismissed' ? C.red : C.textSub, border: `1px solid ${n.status === 'dismissed' ? C.redBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>{n.status === 'dismissed' ? 'Dismissed' : 'Dismiss'}</button><button onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading}
+                        <Button variant="plain" onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'verified' ? 'pending' : 'verified') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'verified' ? C.greenLight : 'transparent', color: n.status === 'verified' ? C.green : C.textSub, border: `1px solid ${n.status === 'verified' ? C.greenBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>{n.status === 'verified' ? 'Verified' : 'Verify'}</Button><Button variant="plain" onClick={(e) => { e.stopPropagation(); setNewsStatus(n.id, n.status === 'dismissed' ? 'pending' : 'dismissed') }} disabled={newsBusy[n.id]} style={{ background: n.status === 'dismissed' ? C.redLight : 'transparent', color: n.status === 'dismissed' ? C.red : C.textSub, border: `1px solid ${n.status === 'dismissed' ? C.redBorder : C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor: newsBusy[n.id] ? 'default' : 'pointer', fontWeight:500, marginRight:6, opacity: newsBusy[n.id] ? 0.5 : 1 }}>{n.status === 'dismissed' ? 'Dismissed' : 'Dismiss'}</Button><Button variant="ghost" onClick={(e) => { e.stopPropagation(); generateLinkedInPosts(n) }} disabled={linkedinLoading}
                           style={{ background:'transparent', color:C.blue, border:`1px solid ${C.border}`, borderRadius:6, padding:'2px 9px', fontSize:11, cursor:'pointer', fontWeight:500, marginRight:6, display:'inline-flex', alignItems:'center', gap:4 }}>
                           <Linkedin size={11} />Draft LinkedIn post
-                        </button>
+                        </Button>
                         {n.source && <a href={n.source.startsWith('http') ? n.source : '#'} target="_blank" rel="noopener" onClick={e => e.stopPropagation()} style={{ fontSize:11, color:C.blue, textDecoration:'none' }}>Source ↗</a>}
                       </div>
                     </div>
@@ -1387,17 +1387,17 @@ export default function Home() {
                   onKeyDown={e=>e.key==='Enter'&&!e.shiftKey&&send()}
                   placeholder="Ask about any company, WMS system, or trend..."
                   style={{ flex:1, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 14px', color:C.text, fontSize:14, outline:'none' }} />
-                <button onClick={send} disabled={loading||!input.trim()}
+                <Button variant="plain" onClick={send} disabled={loading||!input.trim()}
                   style={{ padding:'10px 20px', borderRadius:10, background:C.blue, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer', opacity:loading||!input.trim()?0.4:1 }}>
                   Send
-                </button>
+                </Button>
               </div>
               <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
                 {['Who uses Blue Yonder Dispatcher?','What WMS does DHL use?','Which companies are Unknown?','Who uses Manhattan?','Compare Blue Yonder vs Manhattan'].map(q=>(
-                  <button key={q} onClick={()=>setInput(q)}
+                  <Button variant="plain" key={q} onClick={()=>setInput(q)}
                     style={{ fontSize:11, color:C.blue, background:C.blueLight, border:`1px solid ${C.blueBorder}`, borderRadius:6, padding:'4px 10px', cursor:'pointer', fontWeight:500 }}>
                     {q}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -1443,10 +1443,10 @@ export default function Home() {
                   placeholder="Any intelligence, news signals, or context..."
                   style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', resize:'none', boxSizing:'border-box' }} />
               </div>
-              <button onClick={addEntry} disabled={saving||!form.name||!form.wms_system}
+              <Button variant="plain" onClick={addEntry} disabled={saving||!form.name||!form.wms_system}
                 style={{ width:'100%', padding:'12px', borderRadius:10, background:C.blue, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer', opacity:saving||!form.name||!form.wms_system?0.5:1 }}>
                 {saving?'Saving...':'Add to Database'}
-              </button>
+              </Button>
               {saved && <div style={{ marginTop:12, background:C.greenLight, color:C.green, border:`1px solid ${C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>Added successfully!</div>}
             </div>
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)', marginTop:14 }}>
@@ -1463,7 +1463,7 @@ export default function Home() {
                 </div>
               </div>
               <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} rows={6} placeholder={'Tesco\nOcado\nDPD UK\nKuehne+Nagel'} style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', resize:'vertical', boxSizing:'border-box', fontFamily:'inherit', marginBottom:14 }} />
-              <button onClick={bulkImport} disabled={bulkBusy || !bulkText.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: bulkBusy || !bulkText.trim() ? 'default' : 'pointer', opacity: bulkBusy || !bulkText.trim() ? 0.5 : 1 }}>{bulkBusy ? 'Importing...' : `Import ${bulkText.split('\n').map(s => s.trim()).filter(Boolean).length} companies`}</button>
+              <Button variant="plain" onClick={bulkImport} disabled={bulkBusy || !bulkText.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: bulkBusy || !bulkText.trim() ? 'default' : 'pointer', opacity: bulkBusy || !bulkText.trim() ? 0.5 : 1 }}>{bulkBusy ? 'Importing...' : `Import ${bulkText.split('\n').map(s => s.trim()).filter(Boolean).length} companies`}</Button>
               {bulkResult && (
                 <div style={{ marginTop:12, background: bulkResult.error ? C.redLight : C.greenLight, color: bulkResult.error ? C.red : C.green, border: `1px solid ${bulkResult.error ? C.redBorder : C.greenBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13, fontWeight:500 }}>
                   {bulkResult.error ? `${bulkResult.error}` : `${bulkResult.added ?? 0} added · ${bulkResult.skipped ?? 0} skipped (duplicates)`}
@@ -1483,7 +1483,7 @@ export default function Home() {
                   <input value={suggestCountry} onChange={e => setSuggestCountry(e.target.value)} placeholder="e.g. United Kingdom" style={{ width:'100%', background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:8, padding:'9px 12px', color:C.text, fontSize:13, outline:'none', boxSizing:'border-box' }} />
                 </div>
               </div>
-              <button onClick={getSuggestions} disabled={suggestBusy || !suggestIndustry.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: suggestBusy || !suggestIndustry.trim() ? 'default' : 'pointer', opacity: suggestBusy || !suggestIndustry.trim() ? 0.5 : 1 }}>{suggestBusy ? 'Searching the web...' : 'Get Claude\'s suggestions'}</button>
+              <Button variant="plain" onClick={getSuggestions} disabled={suggestBusy || !suggestIndustry.trim()} style={{ width:'100%', padding:'12px', borderRadius:10, background:C.purple, color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor: suggestBusy || !suggestIndustry.trim() ? 'default' : 'pointer', opacity: suggestBusy || !suggestIndustry.trim() ? 0.5 : 1 }}>{suggestBusy ? 'Searching the web...' : 'Get Claude\'s suggestions'}</Button>
               {suggestError && <div style={{ marginTop:12, background:C.redLight, color:C.red, border:`1px solid ${C.redBorder}`, borderRadius:8, padding:'10px', textAlign:'center', fontSize:13 }}>{suggestError}</div>}
               {suggestions.length > 0 && (
                 <div style={{ marginTop:18, display:'flex', flexDirection:'column', gap:10 }}>
@@ -1498,7 +1498,7 @@ export default function Home() {
                           <div style={{ fontSize:12, color:C.textMuted, marginBottom:4 }}>{[s.industry, s.country].filter(Boolean).join(' · ')}</div>
                           {s.rationale && <div style={{ fontSize:12, color:C.textSub }}>{s.rationale}</div>}
                         </div>
-                        <button onClick={() => addSuggestion(s)} disabled={addingSuggestion[s.name]} style={{ background:C.blue, color:'#fff', border:'none', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:600, cursor: addingSuggestion[s.name] ? 'default' : 'pointer', opacity: addingSuggestion[s.name] ? 0.5 : 1, flexShrink:0 }}>{addingSuggestion[s.name] ? 'Adding...' : '+ Add'}</button>
+                        <Button variant="plain" onClick={() => addSuggestion(s)} disabled={addingSuggestion[s.name]} style={{ background:C.blue, color:'#fff', border:'none', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:600, cursor: addingSuggestion[s.name] ? 'default' : 'pointer', opacity: addingSuggestion[s.name] ? 0.5 : 1, flexShrink:0 }}>{addingSuggestion[s.name] ? 'Adding...' : '+ Add'}</Button>
                       </div>
                     </div>
                   ))}
@@ -1547,15 +1547,15 @@ export default function Home() {
                   {briefCached && briefCachedAt && (
                     <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
                       <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached · {timeAgo(briefCachedAt) || 'just now'}</span>
-                      <button onClick={() => briefCompany && generateBrief(briefCompany, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</button>
+                      <Button variant="ghost" onClick={() => briefCompany && generateBrief(briefCompany, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</Button>
                     </div>
                   )}
                 </div>
               </div>
-              <button onClick={() => setShowBrief(false)} disabled={briefLoading}
+              <Button variant="ghost" onClick={() => setShowBrief(false)} disabled={briefLoading}
                 style={{ background:'transparent', border:'none', color:'#fff', cursor: briefLoading ? 'wait' : 'pointer', padding:6, borderRadius:6, display:'flex', alignItems:'center' }}>
                 <X size={18} />
-              </button>
+              </Button>
             </div>
             <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.6, color:C.text }}>
               {briefLoading && (
@@ -1580,15 +1580,15 @@ export default function Home() {
                 {briefCached && briefCompany && !briefLoading && briefText && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
                     <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(briefCachedAt) || 'just now'}</span>
-                    <button onClick={() => generateBrief(briefCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</button>
+                    <Button variant="plain" onClick={() => generateBrief(briefCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
               </div>
-              <button onClick={copyBrief} disabled={!briefText || briefLoading}
+              <Button variant="plain" onClick={copyBrief} disabled={!briefText || briefLoading}
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: briefCopied ? '#7CC8C4' : '#0B1C37', color: briefCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!briefText || briefLoading) ? 'not-allowed' : 'pointer', opacity: (!briefText || briefLoading) ? 0.5 : 1 }}>
                 <Copy size={14} />
                 {briefCopied ? 'Copied' : 'Copy'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1609,15 +1609,15 @@ export default function Home() {
                   {inmailCached && inmailCachedAt && (
                     <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
                       <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached · {timeAgo(inmailCachedAt) || 'just now'}</span>
-                      <button onClick={() => inmailCompany && generateInmail(inmailCompany, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</button>
+                      <Button variant="ghost" onClick={() => inmailCompany && generateInmail(inmailCompany, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</Button>
                     </div>
                   )}
                 </div>
               </div>
-              <button onClick={() => setShowInmail(false)} disabled={inmailLoading}
+              <Button variant="ghost" onClick={() => setShowInmail(false)} disabled={inmailLoading}
                 style={{ background:'transparent', border:'none', color:'#fff', cursor: inmailLoading ? 'wait' : 'pointer', padding:6, borderRadius:6, display:'flex', alignItems:'center' }}>
                 <X size={18} />
-              </button>
+              </Button>
             </div>
             <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.65, color:C.text, background:C.bg }}>
               {inmailLoading && (
@@ -1641,15 +1641,15 @@ export default function Home() {
                 {inmailCached && inmailCompany && !inmailLoading && inmailText && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
                     <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(inmailCachedAt) || 'just now'}</span>
-                    <button onClick={() => generateInmail(inmailCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</button>
+                    <Button variant="plain" onClick={() => generateInmail(inmailCompany, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
               </div>
-              <button onClick={copyInmail} disabled={!inmailText || inmailLoading}
+              <Button variant="plain" onClick={copyInmail} disabled={!inmailText || inmailLoading}
                 style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: inmailCopied ? '#7CC8C4' : '#0B1C37', color: inmailCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!inmailText || inmailLoading) ? 'not-allowed' : 'pointer', opacity: (!inmailText || inmailLoading) ? 0.5 : 1 }}>
                 <Copy size={14} />
                 {inmailCopied ? 'Copied' : 'Copy'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1666,10 +1666,10 @@ export default function Home() {
                 <Users size={18} color="#FECC01" />
                 <div style={{ fontSize:15, fontWeight:700, color:'#FFFFFF' }}>Companies similar to {lookalikeSource?.name || ''}</div>
               </div>
-              <button onClick={() => setLookalikeOpen(false)} aria-label="Close"
+              <Button variant="ghost" onClick={() => setLookalikeOpen(false)} aria-label="Close"
                 style={{ background:'transparent', border:'none', color:'#fff', cursor:'pointer', padding:6, borderRadius:6, display:'flex', alignItems:'center' }}>
                 <X size={18} />
-              </button>
+              </Button>
             </div>
             <div style={{ padding:'14px 22px', overflowY:'auto', flex:1 }}>
               {lookalikeLoading && (<div className="spin" style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>Searching…</div>)}
@@ -1698,10 +1698,10 @@ export default function Home() {
             </div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 22px', borderTop:`1px solid ${C.border}`, background:C.surfaceAlt, borderRadius:'0 0 16px 16px' }}>
               <div style={{ fontSize:12, color:C.textMuted }}>Top {lookalikeData.length} matches</div>
-              <button onClick={() => setLookalikeOpen(false)}
+              <Button variant="ghost" onClick={() => setLookalikeOpen(false)}
                 style={{ padding:'8px 16px', borderRadius:8, background:'transparent', color:C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:600, cursor:'pointer' }}>
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1722,15 +1722,15 @@ export default function Home() {
                   {linkedinCached && linkedinCachedAt && (
                     <div style={{ marginTop:6, display:'flex', alignItems:'center', gap:8, fontSize:11 }}>
                       <span style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'2px 8px', borderRadius:99, background:'rgba(255,255,255,0.15)', color:'#fff' }}>Cached · {timeAgo(linkedinCachedAt) || 'just now'}</span>
-                      <button onClick={() => linkedinNewsId && generateLinkedInPosts({id:linkedinNewsId, title:linkedinNewsTitle}, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</button>
+                      <Button variant="ghost" onClick={() => linkedinNewsId && generateLinkedInPosts({id:linkedinNewsId, title:linkedinNewsTitle}, true)} style={{ background:'transparent', border:'none', color:'#FECC01', fontSize:11, fontWeight:600, cursor:'pointer', padding:0, textDecoration:'underline' }}>Regenerate</Button>
                     </div>
                   )}
                 </div>
               </div>
-              <button onClick={() => setLinkedinModalOpen(false)} disabled={linkedinLoading}
+              <Button variant="ghost" onClick={() => setLinkedinModalOpen(false)} disabled={linkedinLoading}
                 style={{ background:'transparent', border:'none', color:'#fff', cursor: linkedinLoading ? 'wait' : 'pointer', padding:6, borderRadius:6, display:'flex', alignItems:'center' }}>
                 <X size={18} />
-              </button>
+              </Button>
             </div>
             <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.6, color:C.text, display:'flex', flexDirection:'column', gap:18 }}>
               {linkedinLoading && (
@@ -1756,11 +1756,11 @@ export default function Home() {
                         <span style={{ fontSize:11, fontWeight:700, letterSpacing:'0.06em', color:'#FECC01' }}>{labels[v]}</span>
                         <span style={{ fontSize:11, color:'#7CC8C4' }}>· {captions[v]}</span>
                       </div>
-                      <button onClick={() => copyLinkedInVariant(v)}
+                      <Button variant="plain" onClick={() => copyLinkedInVariant(v)}
                         style={{ display:'flex', alignItems:'center', gap:6, padding:'4px 10px', borderRadius:6, background: copiedVariant === v ? '#7CC8C4' : '#FECC01', color:'#0B1C37', border:'none', fontSize:11, fontWeight:700, cursor:'pointer' }}>
                         <Copy size={12} />
                         {copiedVariant === v ? 'Copied!' : 'Copy'}
-                      </button>
+                      </Button>
                     </div>
                     <div style={{ padding:'14px 16px', whiteSpace:'pre-wrap', fontFamily:'inherit', fontSize:13, lineHeight:1.7, color:C.text }}>
                       {text}
@@ -1775,14 +1775,14 @@ export default function Home() {
                 {linkedinCached && linkedinNewsId && !linkedinLoading && (
                   <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:11, color:C.textSub }}>
                     <span style={{ padding:'2px 8px', borderRadius:999, background:C.surface, border:`1px solid ${C.border}` }}>Cached · {timeAgo(linkedinCachedAt) || 'just now'}</span>
-                    <button onClick={() => generateLinkedInPosts({ id: linkedinNewsId, title: linkedinNewsTitle }, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</button>
+                    <Button variant="plain" onClick={() => generateLinkedInPosts({ id: linkedinNewsId, title: linkedinNewsTitle }, true)} style={{ background:'none', border:'none', color:C.blue, fontSize:11, cursor:'pointer', textDecoration:'underline', padding:0 }}>Regenerate</Button>
                   </div>
                 )}
               </div>
-              <button onClick={() => setLinkedinModalOpen(false)}
+              <Button variant="ghost" onClick={() => setLinkedinModalOpen(false)}
                 style={{ padding:'8px 16px', borderRadius:8, background:'transparent', color:C.textSub, border:`1px solid ${C.border}`, fontSize:13, fontWeight:600, cursor:'pointer' }}>
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1798,7 +1798,7 @@ export default function Home() {
         <div style={{ position:'fixed', right:14, bottom:54, padding:'14px 18px', borderRadius:12, background:C.surface, border:`1px solid ${C.border}`, fontSize:12, color:C.textSub, boxShadow:'0 8px 30px rgba(11,28,55,0.12)', zIndex:51, minWidth:260 }}>
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.text }}>Keyboard shortcuts</div>
-            <button onClick={() => setShortcutsOpen(false)} style={{ border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', padding:0, display:'flex' }}><X size={14} /></button>
+            <Button variant="ghost" onClick={() => setShortcutsOpen(false)} style={{ border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', padding:0, display:'flex' }}><X size={14} /></Button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:'5px 14px' }}>
             {[['?','Toggle this help'],['g d','Dashboard'],['g m','Map'],['g b','Database'],['g a','AI Assistant'],['g n','News'],['g +','Add Entry'],['j / k','Navigate items'],['Enter','Open highlighted'],['b','Generate brief'],['l','Draft LinkedIn post'],['/','Focus search'],['Esc','Close modal']].map(([k,v]) => (
@@ -1835,7 +1835,7 @@ export default function Home() {
           ] as ['dashboard'|'map'|'db'|'chat'|'add'|'news', string, any][]).map(([t, label, Icon]) => {
             const active = tab === t;
             return (
-              <button
+              <Button variant="ghost"
                 key={t}
                 role="tab"
                 aria-selected={active}
@@ -1868,7 +1868,7 @@ export default function Home() {
                 )}
                 <Icon size={20} strokeWidth={active ? 2.4 : 2} />
                 <span style={{ fontSize: 10, fontWeight: active ? 700 : 600, letterSpacing: 0.2 }}>{label}</span>
-              </button>
+              </Button>
             );
           })}
         </nav>
