@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck, Pencil, Star, Share2 } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck, Pencil, Star, Share2, BookOpen } from 'lucide-react'
 
 import dynamic from 'next/dynamic'
 
@@ -9,6 +9,9 @@ const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 import { renderMarkdown } from '@/lib/markdown'
 import { useViewport, DS } from '@/lib/design'
 import { Button, Pill, Card, Modal, Input as DSInput, Textarea as DSTextarea, Skeleton, EmptyState, VendorPill, PrimitivesGlobalStyles, PALETTE } from '@/components/ui/primitives'
+import { VENDORS } from '@/lib/learn/vendors'
+import { SECTORS } from '@/lib/learn/sectors'
+import { GLOSSARY } from '@/lib/learn/glossary'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -180,10 +183,34 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeResult, setGeocodeResult] = useState<{ processed: number; geocoded: number; failed: number } | null>(null)
-  const [tab, setTab] = useState<'dashboard'|'map'|'db'|'chat'|'add'|'news'>('dashboard')
+  const [tab, setTab] = useState<'dashboard'|'map'|'db'|'chat'|'add'|'news'|'learn'>('dashboard')
+  const [learnView, setLearnView] = useState<'vendors'|'sectors'|'glossary'|'ask'>('vendors')
+  const [learnVendorSlug, setLearnVendorSlug] = useState<string|null>(null)
+  const [learnSectorSlug, setLearnSectorSlug] = useState<string|null>(null)
+  const [learnGlossarySearch, setLearnGlossarySearch] = useState('')
+  const [learnAskInput, setLearnAskInput] = useState('')
+  const [learnAskAnswer, setLearnAskAnswer] = useState<string|null>(null)
+  const [learnAskLoading, setLearnAskLoading] = useState(false)
+  const [learnAskCached, setLearnAskCached] = useState(false)
+  const [learnAskError, setLearnAskError] = useState<string|null>(null)
+  async function submitLearnAsk(qIn: string) {
+    const q = qIn.trim()
+    if (!q || learnAskLoading) return
+    setLearnAskLoading(true); setLearnAskError(null); setLearnAskAnswer(null)
+    try {
+      const r = await fetch('/api/learn/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q }) })
+      const j = await r.json()
+      if (!r.ok) throw new Error(j?.error || ('HTTP ' + r.status))
+      setLearnAskAnswer(j.answer); setLearnAskCached(!!j.cached)
+    } catch (err: any) {
+      setLearnAskError(err?.message || 'Request failed')
+    } finally {
+      setLearnAskLoading(false)
+    }
+  }
   const { isMobile, isTablet, isDesktop, width: __vpWidth__ } = useViewport()
 
-  function gotoTab(next: 'dashboard'|'map'|'db'|'chat'|'add'|'news') {
+  function gotoTab(next: 'dashboard'|'map'|'db'|'chat'|'add'|'news'|'learn') {
     setTab(next)
     if (typeof window !== 'undefined') {
       const targetHash = '#/' + next
@@ -193,7 +220,7 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const validTabs = ['dashboard','map','db','chat','add','news']
+    const validTabs = ['dashboard','map','db','chat','add','news','learn']
     const sync = () => {
       const h = window.location.hash.replace(/^#\/?/, '')
       const slug = h.split('/')[0]
@@ -442,6 +469,7 @@ export default function Home() {
       if (buf.val === 'gb') { gotoTab('db'); setSelected(null); buf.val = ''; return }
       if (buf.val === 'ga') { gotoTab('chat'); setSelected(null); buf.val = ''; return }
       if (buf.val === 'gn') { gotoTab('news'); setSelected(null); buf.val = ''; return }
+      if (buf.val === 'gl') { gotoTab('learn'); setSelected(null); buf.val = ''; return }
       if (buf.val === 'g+') { gotoTab('add'); setSelected(null); buf.val = ''; return }
     }
     document.addEventListener('keydown', onKey)
@@ -851,6 +879,7 @@ export default function Home() {
             ['map','Map',MapIcon],
             ['db','Database', DatabaseIcon],
             ['chat','AI Assistant', Bot],
+            ['learn','Learn', BookOpen],
             ['news',`News${allNews.length > 0 ? ` (${allNews.length})` : ''}`, Newspaper],
             ['add','Add Entry', Plus],
           ] as [typeof tab, string, any][]).map(([t, label, Icon]) => (
@@ -1794,6 +1823,223 @@ export default function Home() {
             </div>
           </div>
         )}
+
+        {/* LEARN TAB */}
+        {tab === 'learn' && (
+          <div style={{ maxWidth: 1200 }}>
+            <div style={{ marginBottom: 22 }}>
+              <h1 style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 700, color: C.text, letterSpacing: -0.4 }}>Learn</h1>
+              <p style={{ margin: 0, fontSize: 14, color: C.textSub }}>WMS market reference for swi-tch consultants</p>
+            </div>
+            <div role='tablist' style={{ display: 'flex', gap: 6, marginBottom: 20, borderBottom: '1px solid ' + C.border, paddingBottom: 10, flexWrap: 'wrap' }}>
+              {([['vendors','Vendors'],['sectors','Sectors'],['glossary','Glossary'],['ask','Ask anything']] as const).map(([k, label]) => {
+                const active = learnView === k
+                return (
+                  <Button key={k} variant='plain' onClick={() => setLearnView(k)}
+                    style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer', border: 'none', background: active ? C.blueLight : 'transparent', color: active ? C.blue : C.textSub, fontWeight: active ? 600 : 400 }}>{label}</Button>
+                )
+              })}
+            </div>
+
+            {learnView === 'vendors' && (
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
+                {VENDORS.map(v => {
+                  const palette = [C.blue, C.purple, C.green, C.amber, C.red, C.teal]
+                  const idx = Math.abs([...v.slug].reduce((a, ch) => a + ch.charCodeAt(0), 0)) % palette.length
+                  const accent = palette[idx]
+                  return (
+                    <button key={v.slug} onClick={() => setLearnVendorSlug(v.slug)} className='btn-hover'
+                      style={{ textAlign: 'left', cursor: 'pointer', background: C.surface, border: '1px solid ' + C.border, borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: accent, letterSpacing: -0.2 }}>{v.name}</div>
+                      <div style={{ fontSize: 12, color: C.textSub, lineHeight: 1.5 }}>{v.oneLiner}</div>
+                      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>Founded {v.founded} · HQ {v.hq.split(',')[0]}</div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {learnView === 'sectors' && (
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
+                {SECTORS.map(sec => {
+                  const palette = [C.blue, C.purple, C.green, C.amber, C.red, C.teal]
+                  const idx = Math.abs([...sec.slug].reduce((a, ch) => a + ch.charCodeAt(0), 0)) % palette.length
+                  const accent = palette[idx]
+                  return (
+                    <button key={sec.slug} onClick={() => setLearnSectorSlug(sec.slug)} className='btn-hover'
+                      style={{ textAlign: 'left', cursor: 'pointer', background: C.surface, border: '1px solid ' + C.border, borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: accent, letterSpacing: -0.2 }}>{sec.name}</div>
+                      <div style={{ fontSize: 12, color: C.textSub, lineHeight: 1.5 }}>{sec.oneLiner}</div>
+                      <div style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>{sec.exampleCompanies.slice(0, 3).join(' · ')}</div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {learnView === 'glossary' && (() => {
+              const qq = learnGlossarySearch.trim().toLowerCase()
+              const filtered = qq ? GLOSSARY.filter(t => t.term.toLowerCase().includes(qq) || (t.expansion || '').toLowerCase().includes(qq) || t.short.toLowerCase().includes(qq) || (t.long || '').toLowerCase().includes(qq)) : GLOSSARY
+              const sorted = [...filtered].sort((a, b) => a.term.localeCompare(b.term))
+              const groups: Record<string, typeof GLOSSARY> = {}
+              sorted.forEach(t => { const k = t.term[0].toUpperCase(); if (!groups[k]) groups[k] = []; groups[k].push(t) })
+              const letters = Object.keys(groups).sort()
+              return (
+                <div>
+                  <div style={{ marginBottom: 16, maxWidth: 480 }}>
+                    <DSInput placeholder='Filter glossary...' value={learnGlossarySearch} onChange={(e: any) => setLearnGlossarySearch(e.target.value)} leftIcon={<Search size={14} />} />
+                  </div>
+                  {letters.length === 0 && (
+                    <div style={{ padding: 30, textAlign: 'center', color: C.textMuted, fontSize: 13 }}>No terms match.</div>
+                  )}
+                  {letters.map(letter => (
+                    <div key={letter} style={{ marginBottom: 18 }}>
+                      <div style={{ position: 'sticky', top: 0, background: C.bg, padding: '6px 0', fontSize: 14, fontWeight: 700, color: C.blue, borderBottom: '1px solid ' + C.border, marginBottom: 8, zIndex: 2 }}>{letter}</div>
+                      {groups[letter].map(t => (
+                        <div key={t.term} style={{ padding: '10px 0', borderBottom: '1px solid ' + C.border }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 }}>
+                            <span style={{ fontSize: 14, fontWeight: 600, color: C.text }}>{t.term}</span>
+                            {t.expansion && <span style={{ fontSize: 12, color: C.textSub, fontStyle: 'italic' }}>{t.expansion}</span>}
+                            <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: C.surfaceAlt, color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.4 }}>{t.category}</span>
+                          </div>
+                          <div style={{ fontSize: 13, color: C.textSub, marginTop: 4, lineHeight: 1.5 }}>{t.short}</div>
+                          {t.long && <div style={{ fontSize: 12, color: C.textMuted, marginTop: 4, lineHeight: 1.55 }}>{t.long}</div>}
+                          {t.related && t.related.length > 0 && (
+                            <div style={{ marginTop: 6, fontSize: 11, color: C.textMuted }}>Related: {t.related.join(', ')}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+
+            {learnView === 'ask' && (
+              <div style={{ maxWidth: 760 }}>
+                <p style={{ margin: '0 0 14px', fontSize: 13, color: C.textSub }}>Ask any factual question about the WMS market. Answers come from Claude, drawing on widely-published vendor and sector information.</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                  {[
+                    "What's the difference between Manhattan SCALE and Manhattan Active?",
+                    "Which 3PLs use Blue Yonder?",
+                    "What does a SAP EWM consultant typically do?",
+                    "How is grocery WMS different from general retail?",
+                  ].map(qq => (
+                    <Button key={qq} variant='plain' onClick={() => setLearnAskInput(qq)}
+                      style={{ padding: '6px 12px', borderRadius: 99, fontSize: 12, background: C.surfaceAlt, color: C.textSub, border: '1px solid ' + C.border, cursor: 'pointer' }}>{qq}</Button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <DSInput placeholder='Ask anything about the WMS market...' value={learnAskInput} onChange={(e: any) => setLearnAskInput(e.target.value)} onKeyDown={(e: any) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitLearnAsk(learnAskInput) } }} />
+                  </div>
+                  <Button variant='primary' disabled={!learnAskInput.trim() || learnAskLoading} onClick={() => submitLearnAsk(learnAskInput)}>{learnAskLoading ? 'Thinking...' : 'Ask'}</Button>
+                </div>
+                {learnAskError && (
+                  <div style={{ marginTop: 14, padding: 12, borderRadius: 8, background: C.redLight, border: '1px solid ' + C.redBorder, color: C.red, fontSize: 13 }}>{learnAskError}</div>
+                )}
+                {learnAskAnswer && (
+                  <div style={{ marginTop: 18, padding: 18, background: C.surface, border: '1px solid ' + C.border, borderRadius: 12 }}>
+                    {learnAskCached && (<div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8 }}>From cache</div>)}
+                    <div style={{ fontSize: 13, color: C.text }} dangerouslySetInnerHTML={{ __html: renderMarkdown(learnAskAnswer) }} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Modal isOpen={!!learnVendorSlug} onClose={() => setLearnVendorSlug(null)} size='lg' title={(VENDORS.find(x => x.slug === learnVendorSlug) || { name: '' }).name}>
+              {(() => {
+                const v = VENDORS.find(x => x.slug === learnVendorSlug)
+                if (!v) return null
+                const palette = [C.blue, C.purple, C.green, C.amber, C.red, C.teal]
+                const idx = Math.abs([...v.slug].reduce((a, ch) => a + ch.charCodeAt(0), 0)) % palette.length
+                const accent = palette[idx]
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 18, fontSize: 13, color: C.text, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 13, color: C.textSub, fontStyle: 'italic' }}>{v.oneLiner}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'auto 1fr', gap: '4px 16px', fontSize: 12 }}>
+                      <span style={{ color: C.textMuted }}>Founded</span><span>{v.founded}</span>
+                      <span style={{ color: C.textMuted }}>HQ</span><span>{v.hq}</span>
+                      <span style={{ color: C.textMuted }}>Ownership</span><span>{v.ownership}</span>
+                      <span style={{ color: C.textMuted }}>Customer size</span><span>{v.typicalCustomerSize}</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>History</div>
+                      <div style={{ fontSize: 13, color: C.text, lineHeight: 1.65 }}>{v.history}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Flagship products</div>
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {v.flagshipProducts.map(p => (
+                          <li key={p.name} style={{ marginBottom: 6 }}><span style={{ fontWeight: 600 }}>{p.name}</span> — <span style={{ color: C.textSub }}>{p.description}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Industries</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{v.industries.map(i => (<span key={i} style={{ fontSize: 12, padding: '3px 9px', borderRadius: 99, background: C.surfaceAlt, color: C.textSub }}>{i}</span>))}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Known customers (publicised)</div>
+                      <div style={{ fontSize: 13, color: C.textSub }}>{v.knownCustomers.join(' · ')}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Topics to explore with candidates</div>
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {v.topicsToExplore.map(t => (<li key={t} style={{ marginBottom: 4 }}>{t}</li>))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Further reading</div>
+                      <ul style={{ margin: 0, paddingLeft: 18, color: C.textSub }}>
+                        {v.furtherReading.map(t => (<li key={t} style={{ marginBottom: 4 }}>{t}</li>))}
+                      </ul>
+                    </div>
+                  </div>
+                )
+              })()}
+            </Modal>
+
+            <Modal isOpen={!!learnSectorSlug} onClose={() => setLearnSectorSlug(null)} size='lg' title={(SECTORS.find(x => x.slug === learnSectorSlug) || { name: '' }).name}>
+              {(() => {
+                const sec = SECTORS.find(x => x.slug === learnSectorSlug)
+                if (!sec) return null
+                const palette = [C.blue, C.purple, C.green, C.amber, C.red, C.teal]
+                const idx = Math.abs([...sec.slug].reduce((a, ch) => a + ch.charCodeAt(0), 0)) % palette.length
+                const accent = palette[idx]
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 18, fontSize: 13, color: C.text, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 13, color: C.textSub, fontStyle: 'italic' }}>{sec.oneLiner}</div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>What makes it special</div>
+                      <div style={{ fontSize: 13, color: C.text, lineHeight: 1.65 }}>{sec.whatMakesItSpecial}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Common WMS choices</div>
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {sec.commonWmsChoices.map(c2 => (<li key={c2} style={{ marginBottom: 4 }}>{c2}</li>))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Key metrics</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{sec.keyMetrics.map(m => (<span key={m} style={{ fontSize: 12, padding: '3px 9px', borderRadius: 99, background: C.surfaceAlt, color: C.textSub }}>{m}</span>))}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Topics to explore</div>
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {sec.topicsToExplore.map(t => (<li key={t} style={{ marginBottom: 4 }}>{t}</li>))}
+                      </ul>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: accent, letterSpacing: 0.5, marginBottom: 6 }}>Example companies</div>
+                      <div style={{ fontSize: 13, color: C.textSub }}>{sec.exampleCompanies.join(' · ')}</div>
+                    </div>
+                  </div>
+                )
+              })()}
+            </Modal>
+          </div>
+        )}
       </div>
 
       <style>{`
@@ -2359,7 +2605,7 @@ export default function Home() {
             <Button variant="ghost" onClick={() => setShortcutsOpen(false)} style={{ border:'none', background:'transparent', color:C.textMuted, cursor:'pointer', padding:0, display:'flex' }}><X size={14} /></Button>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'auto 1fr', gap:'5px 14px' }}>
-            {[['?','Toggle this help'],['g d','Dashboard'],['g m','Map'],['g b','Database'],['g a','AI Assistant'],['g n','News'],['g +','Add Entry'],['j / k','Navigate items'],['Enter','Open highlighted'],['b','Generate brief'],['l','Draft LinkedIn post'],['/','Focus search'],['Esc','Close modal']].map(([k,v]) => (
+            {[['?','Toggle this help'],['g d','Dashboard'],['g m','Map'],['g b','Database'],['g a','AI Assistant'],['g n','News'],['g l','Learn'],['g +','Add Entry'],['j / k','Navigate items'],['Enter','Open highlighted'],['b','Generate brief'],['l','Draft LinkedIn post'],['/','Focus search'],['Esc','Close modal']].map(([k,v]) => (
               <div key={k} style={{ display:'contents' }}>
                 <kbd style={{ display:'inline-block', fontFamily:'ui-monospace, "SF Mono", Consolas, monospace', fontSize:11, background:C.surfaceAlt, border:`1px solid ${C.border}`, borderRadius:4, padding:'1px 6px', color:C.text, minWidth:18, textAlign:'center', justifySelf:'start' }}>{k}</kbd>
                 <span style={{ alignSelf:'center' }}>{v}</span>
