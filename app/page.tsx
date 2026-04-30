@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck, Pencil, Star } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck, Pencil, Star, Share2 } from 'lucide-react'
 
 import dynamic from 'next/dynamic'
 
@@ -245,6 +245,15 @@ export default function Home() {
   const [briefText, setBriefText] = useState('')
   const [briefError, setBriefError] = useState('')
   const [briefCopied, setBriefCopied] = useState(false)
+  const [sharingBrief, setSharingBrief] = useState(false)
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [shareCopied, setShareCopied] = useState(false)
+  useEffect(() => {
+    if (!showBrief) {
+      setShareUrl(null)
+      setShareCopied(false)
+    }
+  }, [showBrief])
   const [linkedinModalOpen, setLinkedinModalOpen] = useState(false)
   const [linkedinNewsId, setLinkedinNewsId] = useState<string | null>(null)
   const [linkedinNewsTitle, setLinkedinNewsTitle] = useState('')
@@ -541,6 +550,27 @@ export default function Home() {
       setBriefCopied(true)
       setTimeout(() => setBriefCopied(false), 2000)
     } catch {}
+  }
+  async function shareBrief() {
+    if (!briefCompany || !briefText) return
+    setSharingBrief(true)
+    try {
+      const r = await fetch('/api/share/brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: briefCompany.id, brief_content: briefText }),
+      })
+      if (!r.ok) throw new Error(await r.text())
+      const { url } = await r.json()
+      try { await navigator.clipboard.writeText(url) } catch {}
+      setShareUrl(url)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 4000)
+    } catch (e: any) {
+      alert(`Could not create share link: ${e?.message || 'unknown error'}`)
+    } finally {
+      setSharingBrief(false)
+    }
   }
   async function generateInmail(company: any, refresh: boolean = false) {
     if (!company || inmailLoading) return
@@ -1909,11 +1939,31 @@ export default function Home() {
                   </div>
                 )}
               </div>
-              <Button variant="plain" onClick={copyBrief} disabled={!briefText || briefLoading}
-                style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: briefCopied ? '#7CC8C4' : '#0B1C37', color: briefCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!briefText || briefLoading) ? 'not-allowed' : 'pointer', opacity: (!briefText || briefLoading) ? 0.5 : 1 }}>
-                <Copy size={14} />
-                {briefCopied ? 'Copied' : 'Copy'}
-              </Button>
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:6 }}>
+                {shareUrl && shareCopied && (
+                  <div style={{ fontSize:11, color:C.textSub, display:'flex', alignItems:'center', gap:6, maxWidth:'100%' }}>
+                    <span style={{ color:'#0E7C7B', fontWeight:600 }}>Link copied:</span>
+                    <a href={shareUrl} target="_blank" rel="noopener noreferrer"
+                      style={{ color:'#0E7C7B', textDecoration:'underline', fontFamily:'ui-monospace,SFMono-Regular,Consolas,monospace', fontSize:11, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:280 }}>
+                      {shareUrl}
+                    </a>
+                    <span style={{ color:C.textSub }}>· Opens in new tab</span>
+                  </div>
+                )}
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <Button variant="secondary" size="sm" leftIcon={<Share2 size={14} />}
+                    onClick={shareBrief}
+                    disabled={!briefText || briefLoading || sharingBrief}
+                    loading={sharingBrief}>
+                    {shareCopied ? 'Link copied' : 'Share link'}
+                  </Button>
+                  <Button variant="plain" onClick={copyBrief} disabled={!briefText || briefLoading}
+                    style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:8, background: briefCopied ? '#7CC8C4' : '#0B1C37', color: briefCopied ? '#0B1C37' : '#fff', border:'none', fontSize:13, fontWeight:600, cursor: (!briefText || briefLoading) ? 'not-allowed' : 'pointer', opacity: (!briefText || briefLoading) ? 0.5 : 1 }}>
+                    <Copy size={14} />
+                    {briefCopied ? 'Copied' : 'Copy'}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </Modal>
