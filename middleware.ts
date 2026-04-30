@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 // - /login itself
 // - /api/login (so the login form can set the cookie)
 // - /api/cron (uses its own Bearer auth for Vercel cron)
+// - /share/* (public share-link landing pages)
+// - /api/share/brief/<token> (public read endpoint for shared briefs)
 // - Next static assets
 
 const COOKIE_NAME = 'wms-auth'
@@ -13,10 +15,14 @@ const PUBLIC_PATHS = [
   '/login',
   '/api/login',
   '/api/cron',
+  '/share',
 ]
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))) return true
+  // Public read endpoint for shared briefs: /api/share/brief/<token>.
+  // The token IS the credential. POST /api/share/brief stays gated.
+  if (pathname.startsWith('/api/share/brief/')) return true
   if (pathname.startsWith('/_next/')) return true
   if (pathname === '/favicon.ico' || pathname === '/robots.txt') return true
   return false

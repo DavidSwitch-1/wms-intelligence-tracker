@@ -57,3 +57,21 @@ create index if not exists companies_discovered_at_idx on public.companies(disco
 alter table public.companies add column if not exists starred boolean not null default false;
 alter table public.companies add column if not exists starred_at timestamptz;
 create index if not exists companies_starred_idx on public.companies(starred, starred_at desc) where starred;
+
+-- Shared briefs (added 2026-04-30).
+-- Recruiter generates a brief and shares a public, unguessable link with hiring managers.
+-- The token IS the credential — no auth required to view. View counts tracked for visibility.
+create table if not exists public.shared_briefs (
+  id uuid primary key default gen_random_uuid(),
+  share_token text unique not null,
+  company_id uuid references public.companies(id) on delete cascade not null,
+  company_name text not null,
+  brief_content text not null,
+  created_by text default 'david',
+  created_at timestamptz not null default now(),
+  expires_at timestamptz,
+  view_count integer not null default 0,
+  last_viewed_at timestamptz
+);
+create index if not exists shared_briefs_token_idx on public.shared_briefs(share_token);
+create index if not exists shared_briefs_company_idx on public.shared_briefs(company_id);
