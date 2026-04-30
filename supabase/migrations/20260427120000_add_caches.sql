@@ -75,3 +75,19 @@ create table if not exists public.shared_briefs (
 );
 create index if not exists shared_briefs_token_idx on public.shared_briefs(share_token);
 create index if not exists shared_briefs_company_idx on public.shared_briefs(company_id);
+
+-- ---------------------------------------------------------------------------
+-- Match existing tables: ensure RLS is disabled on the new tables so the API
+-- routes (using anon/authenticated role) can read/write. Wrapped in a DO-block
+-- so this is idempotent and won't error if learn_qa_cache hasn't been created
+-- yet by the parallel Learn-tab-v2 migration.
+-- ---------------------------------------------------------------------------
+do $$
+begin
+  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'shared_briefs') then
+    execute 'alter table public.shared_briefs disable row level security';
+  end if;
+  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'learn_qa_cache') then
+    execute 'alter table public.learn_qa_cache disable row level security';
+  end if;
+end$$;
