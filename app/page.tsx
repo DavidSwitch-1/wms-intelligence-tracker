@@ -1461,7 +1461,7 @@ export default function Home() {
                 const isResearching = researching[c.id]
                 const researchResult = researchResults[c.id]
                 return (
-                  <div key={c.id} data-kb-row={i} onClick={() => setSelected(c)}
+                  <div key={c.id} data-kb-row={i} className="swi-lift" onClick={() => setSelected(c)}
                     style={{ background: tab==='db' && i===highlightedIndex ? '#FFF8DA' : C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 16px', cursor:'pointer', transition:'all 0.12s', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', outline: tab==='db' && i===highlightedIndex ? '2px solid #FECC01' : 'none', outlineOffset: tab==='db' && i===highlightedIndex ? '-2px' : 0 }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor=C.blue; el.style.boxShadow='0 2px 8px rgba(37,99,235,0.1)' }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor=C.border; el.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)' }}>
@@ -2182,7 +2182,7 @@ export default function Home() {
       {toasts.length > 0 && (
         <div className="wms-toasts" aria-live="polite" aria-atomic="true">
           {toasts.map(t => (
-            <div key={t.id} className={`wms-toast wms-toast-${t.type}`} role="status">
+            <div key={t.id} className={`wms-toast wms-toast-${t.type} swi-toast-in`} role="status">
               <div className="wms-toast-msg">{t.message}</div>
               <button onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))} className="wms-toast-x" aria-label="Dismiss">×</button>
             </div>
