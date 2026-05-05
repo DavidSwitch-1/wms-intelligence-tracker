@@ -917,6 +917,7 @@ export default function Home() {
       </div>
 
       <div style={{ maxWidth:1200, margin:'0 auto', padding:'24px 28px' }}>
+      <div key={tab} className={`tab-content tab-content-${tab}`}>
 
         {/* ── DATABASE TAB ── */}
         {tab === 'dashboard' && !selected && (() => {
@@ -2074,6 +2075,7 @@ export default function Home() {
           </div>
         )}
       </div>
+      </div>
 
       {toasts.length > 0 && (
         <div className="wms-toasts" aria-live="polite" aria-atomic="true">
@@ -2089,6 +2091,11 @@ export default function Home() {
       <style>{`
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
         @keyframes pulse-hot{0%,100%{box-shadow:0 0 0 0 rgba(254,204,1,0.7)}50%{box-shadow:0 0 0 4px rgba(254,204,1,0)}}
+        @keyframes tab-enter{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
+        @keyframes tab-enter-mobile{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:translateX(0)}}
+        .tab-content{animation:tab-enter 180ms cubic-bezier(0.4,0,0.2,1);will-change:opacity,transform}
+        @media (max-width:768px){.tab-content{animation:tab-enter-mobile 140ms cubic-bezier(0.4,0,0.2,1)}}
+        @media (prefers-reduced-motion:reduce){.tab-content{animation:none}}
         .pulse-hot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#FECC01;flex-shrink:0;animation:pulse-hot 1.8s ease-out infinite}
         @keyframes toast-slide-in-right{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes toast-slide-in-top{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
