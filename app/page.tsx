@@ -937,12 +937,53 @@ export default function Home() {
           const totalManhattan = companies.filter((c: any) => c.wms_entries?.some((w: any) => (w.vendor || '').includes('Manhattan'))).length
           const totalBlueYonder = companies.filter((c: any) => c.wms_entries?.some((w: any) => (w.vendor || '').includes('Blue Yonder'))).length
           const totalUnknown = companies.filter((c: any) => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown')).length
+          // 14-day sparkline series + deltas
+          const SERIES_DAYS = 14
+          const DAY_MS = 86400000
+          const dayKeys: number[] = Array.from({ length: SERIES_DAYS }, (_, i) => {
+            const d = new Date(now - (SERIES_DAYS - 1 - i) * DAY_MS)
+            d.setHours(0, 0, 0, 0)
+            return d.getTime()
+          })
+          const dayBucket = (iso: string | undefined | null) => {
+            if (!iso) return -1
+            const d = new Date(iso); if (isNaN(d.getTime())) return -1
+            d.setHours(0, 0, 0, 0)
+            const tt = d.getTime()
+            for (let i = 0; i < dayKeys.length; i++) if (tt === dayKeys[i]) return i
+            return -1
+          }
+          const seriesNewsAll = dayKeys.map((_, i) =>
+            allNewsItems.filter((n: any) => dayBucket(n.published_at || n.created_at) === i).length
+          )
+          const seriesNewsForBrand = (brand: string) => dayKeys.map((_, i) =>
+            allNewsItems.filter((n: any) => {
+              const v = String(n.proposed_wms_system || '').toLowerCase()
+              return dayBucket(n.published_at || n.created_at) === i && v.includes(brand.toLowerCase())
+            }).length
+          )
+          const seriesCompaniesNew = dayKeys.map((_, i) =>
+            companies.filter((c: any) => dayBucket(c.created_at) === i).length
+          )
+          let runTotal = Math.max(0, companies.length - seriesCompaniesNew.reduce((a, b) => a + b, 0))
+          const seriesTracked = seriesCompaniesNew.map((v) => (runTotal += v))
+          const seriesUnknown = dayKeys.map((_, i) =>
+            companies.filter((c: any) => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown') && dayBucket(c.created_at) === i).length
+          )
+          const sum = (a: number[]) => a.reduce((x, y) => x + y, 0)
+          const last7 = (a: number[]) => sum(a.slice(-7))
+          const prev7 = (a: number[]) => sum(a.slice(0, 7))
+          const deltaText = (a: number[]) => {
+            const d = last7(a) - prev7(a)
+            if (d === 0) return 'no change'
+            return `${d > 0 ? '+' : ''}${d} vs last week`
+          }
           const stats = [
-            { label: 'Tracked', value: companies.length, accent: C.text },
-            { label: 'Manhattan', value: totalManhattan, accent: C.red },
-            { label: 'Blue Yonder', value: totalBlueYonder, accent: C.blue },
-            { label: 'Unknown', value: totalUnknown, accent: C.textMuted },
-            { label: 'News last 7d', value: recentNews, accent: C.blue }
+            { label: 'Tracked', value: companies.length, series: seriesTracked, delta: `+${seriesCompaniesNew.slice(-7).reduce((a,b)=>a+b,0)} this week`, dotColor: '' },
+            { label: 'Manhattan', value: totalManhattan, series: seriesNewsForBrand('Manhattan'), delta: deltaText(seriesNewsForBrand('Manhattan')), dotColor: P.vendor.manhattan },
+            { label: 'Blue Yonder', value: totalBlueYonder, series: seriesNewsForBrand('Blue Yonder'), delta: deltaText(seriesNewsForBrand('Blue Yonder')), dotColor: P.vendor.blueYonder },
+            { label: 'Unknown', value: totalUnknown, series: seriesUnknown, delta: deltaText(seriesUnknown), dotColor: '' },
+            { label: 'News last 7d', value: recentNews, series: seriesNewsAll, delta: deltaText(seriesNewsAll), dotColor: P.teal },
           ]
           const sortedNews = [...allNewsItems].sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
           return (
@@ -986,12 +1027,31 @@ export default function Home() {
                       <Skeleton variant="line" width="44%" height={26} />
                     </Card>
                   ))
-                ) : stats.map(s => (
-                  <Card key={s.label} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
-                    <div style={{ fontSize:11, color:C.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>{s.label}</div>
-                    <div style={{ fontSize:26, fontWeight:700, color:s.accent, marginTop:4, lineHeight:1 }}>{s.value}</div>
-                  </Card>
-                ))}
+                ) : stats.map(s => {
+                              const series = s.series && s.series.length ? s.series : Array(14).fill(0)
+                              const maxV = Math.max(1, ...series)
+                              const w = 64, h = 18
+                              const stepX = series.length > 1 ? w / (series.length - 1) : 0
+                              const points = series.map((v, i) => `${(i * stepX).toFixed(2)},${(h - (v / maxV) * (h - 2) - 1).toFixed(2)}`).join(' ')
+                              const isUp = s.delta && s.delta.includes('+') && !s.delta.startsWith('-')
+                              const isDown = s.delta && s.delta.startsWith('-')
+                              const deltaColor = s.delta === 'no change' ? C.textMuted : isDown ? P.coral : P.teal
+                              return (
+                              <Card key={s.label} className="swi-lift" style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding: isMobile ? '14px 14px' : '16px 18px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
+                                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, marginBottom: isMobile ? 6 : 8 }}>
+                                  <div style={{ ...T.section, color:C.textMuted, display:'flex', alignItems:'center', gap:6 }}>
+                                    {s.dotColor ? <span style={{ width:6, height:6, borderRadius:'50%', background:s.dotColor, display:'inline-block' }} /> : null}
+                                    <span>{s.label}</span>
+                                  </div>
+                                  <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden style={{ flexShrink: 0, opacity: 0.95 }}>
+                                    <polyline points={points} fill="none" stroke={P.teal} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                </div>
+                                <div style={{ ...T.kpi, fontSize: isMobile ? 30 : 40, color:C.text }}>{s.value}</div>
+                                <div style={{ ...T.caption, color: deltaColor, marginTop: 6 }}>{s.delta}</div>
+                              </Card>
+                              )
+                            })}
               </div>
               {(() => {
                 const watching = (companies || []).filter((c: any) => !!c.starred)
