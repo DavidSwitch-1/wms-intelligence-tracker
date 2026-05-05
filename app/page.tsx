@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users , Map as MapIcon, Truck, Pencil, Star, Share2, BookOpen } from 'lucide-react'
+import { LayoutDashboard, Database as DatabaseIcon, Sparkles, Newspaper, Plus, RefreshCw, Search, Building2, Briefcase, Hammer, Repeat, Handshake, TrendingUp, UserCog, Zap, ArrowRight, Bot, FileText, Copy, X, Linkedin, MessageCircle, MessageSquare, CheckCircle2, AlertCircle, Users, Filter, Map as MapIcon, Truck, Pencil, Star, Share2, BookOpen } from 'lucide-react'
 
 import dynamic from 'next/dynamic'
 
@@ -1026,10 +1026,11 @@ export default function Home() {
                     <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies you are actively pitching this week. Click the star on any company to watch it here.</div>
                     {sortedWatching.length === 0 ? (
                       <Card variant='inset' padding={14} style={{ marginBottom:14 }}>
-                        <div style={{ fontSize:13, color:C.textSub, display:'flex', alignItems:'center', gap:8 }}>
-                          <Star size={14} color={C.textMuted} />
-                          <span>No companies starred yet. Click the star on any company to watch it here.</span>
-                        </div>
+                        <EmptyState
+                          icon={<Star size={22} />}
+                          title="No companies starred yet"
+                          body="Click the star on any company to watch it here."
+                        />
                       </Card>
                     ) : (
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:10, marginBottom:14 }}>
@@ -1105,7 +1106,11 @@ export default function Home() {
                     <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Auto-discovered by the nightly sweep · verify or dismiss to keep the dataset clean.</div>
                     {recentDiscoveries.length === 0 ? (
                       <Card variant='inset' padding={14} style={{ marginBottom:14 }}>
-                        <div style={{ fontSize:13, color:C.textSub }}>No new discoveries this week. The next sweep runs nightly at 02:00 UTC.</div>
+                        <EmptyState
+                          icon={<Sparkles size={22} />}
+                          title="No new discoveries this week"
+                          body="The next sweep runs nightly at 02:00 UTC and will populate fresh candidates here."
+                        />
                       </Card>
                     ) : (
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(240px, 1fr))', gap:10, marginBottom:14 }}>
@@ -1140,8 +1145,12 @@ export default function Home() {
               </div>
               <div style={{ fontSize:12, color:C.textSub, marginBottom:14 }}>Companies with hiring or expansion activity in the last 30 days</div>
               {hotLeads.length === 0 ? (
-                <Card style={{ padding:'24px 16px', textAlign:'center', color:C.textMuted, background:C.surface, border:`1px dashed ${C.border}`, borderRadius:10, marginBottom:24, fontSize:13 }}>
-                  No hot signals yet — the nightly cron at 2am UTC will surface new ones.
+                <Card style={{ marginBottom:24, border:`1px dashed ${C.border}` }}>
+                  <EmptyState
+                    icon={<Zap size={22} />}
+                    title="No hot signals yet"
+                    body="The nightly cron at 02:00 UTC will surface new hiring and expansion activity."
+                  />
                 </Card>
               ) : (
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:10, marginBottom:24 }}>
@@ -1420,8 +1429,14 @@ export default function Home() {
                 )
               })}
               {filtered.length === 0 && (
-                <div style={{ textAlign:'center', padding:60, color:C.textMuted, background:C.surface, borderRadius:12, border:`1px solid ${C.border}` }}>No companies match your search
-                </div>
+                <Card style={{ border:`1px solid ${C.border}` }}>
+                  <EmptyState
+                    icon={<Filter size={22} />}
+                    title="No matches"
+                    body="Try clearing a filter or running a new search."
+                    action={<Button variant="primary" onClick={() => { setFilterVendor('All'); setSearch(''); setFilterStarred(false); }}>Clear filters</Button>}
+                  />
+                </Card>
               )}
             </div>
           </div>
@@ -1641,11 +1656,14 @@ export default function Home() {
             </div>
 
             {allNews.length === 0 ? (
-              <div style={{ textAlign:'center', padding:60, color:C.textMuted, background:C.surface, borderRadius:12, border:`1px solid ${C.border}` }}>
-                <div style={{ fontSize:32, marginBottom:12 }}></div>
-                <div style={{ fontWeight:600, marginBottom:6 }}>No news yet</div>
-                <div style={{ fontSize:13 }}>News and research findings will appear here automatically as the AI discovers new information.</div>
-              </div>
+              <Card style={{ border:`1px solid ${C.border}` }}>
+                <EmptyState
+                  icon={<Newspaper size={22} />}
+                  title="No news yet"
+                  body="Tonight's sweep at 02:00 UTC will populate this feed."
+                  action={<Button variant="primary" onClick={load} disabled={refreshing}>{refreshing ? 'Refreshing…' : 'Run sweep now'}</Button>}
+                />
+              </Card>
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 <div style={{ display:'flex', gap: 6, marginBottom: 12 }}>
@@ -2369,7 +2387,13 @@ export default function Home() {
                 </div>
               )}
               {!lookalikeLoading && lookalikeError && (<div style={{ color:C.red, fontSize:13, padding:'12px 0' }}>{lookalikeError}</div>)}
-              {!lookalikeLoading && !lookalikeError && lookalikeData.length === 0 && (<div style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>No close lookalikes found yet — try expanding industries via the bulk import.</div>)}
+              {!lookalikeLoading && !lookalikeError && lookalikeData.length === 0 && (
+                <EmptyState
+                  icon={<Users size={22} />}
+                  title="No close matches"
+                  body="Try widening filters in your dataset, or expanding industries via the bulk import."
+                />
+              )}
               {!lookalikeLoading && lookalikeData.length > 0 && lookalikeData.slice(0,10).map((row: any) => {
                 const lk = companies.find((c: any) => c.id === row.id) || row
                 const wmsLine = (lk.wms_entries || []).map((w: any) => w.wms_system).filter(Boolean).join(' / ') || row.wms || 'Unknown'
