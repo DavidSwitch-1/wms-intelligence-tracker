@@ -1018,7 +1018,27 @@ export default function Home() {
                   </div>
                 )
               })()}
-              <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? 8 : 10, marginBottom:24 }}>
+              {(() => {
+                            const hour = new Date().getHours()
+                            const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+                            const newCompaniesThisWeek = (companies || []).filter((c: any) => c.created_at && (now - new Date(c.created_at).getTime() < 7 * 24 * 60 * 60 * 1000)).length
+                            const hot = recentNews
+                            const summaryBits: string[] = []
+                            if (hot) summaryBits.push(`${hot} hot signal${hot === 1 ? '' : 's'} this week`)
+                            if (newCompaniesThisWeek) summaryBits.push(`${newCompaniesThisWeek} new compan${newCompaniesThisWeek === 1 ? 'y' : 'ies'} discovered`)
+                            const summary = summaryBits.length ? summaryBits.join(', ') + '.' : 'A quiet week — nothing new to surface.'
+                            return (
+                              <div style={{ marginBottom: isMobile ? 18 : 28 }}>
+                                <div style={{ ...T.hero, fontSize: isMobile ? 24 : 32, color: C.text, marginBottom: 6 }}>
+                                  {greeting}, David
+                                </div>
+                                <div style={{ ...T.body, fontSize: isMobile ? 13 : 15, color: C.textSub, maxWidth: 720 }}>
+                                  {summary}
+                                </div>
+                              </div>
+                            )
+                          })()}
+                          <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? 8 : 10, marginBottom:24 }}>
                 {refreshing && companies.length === 0 ? (
                   Array.from({length: isMobile ? 4 : 5}).map((_, i) => (
                     <Card key={`kpi-skel-${i}`} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
