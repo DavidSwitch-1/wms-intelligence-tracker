@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic'
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 import { renderMarkdown } from '@/lib/markdown'
-import { useViewport, DS } from '@/lib/design'
+import { useViewport, DS, T, P, SIG, vendorTint, hexToTint, SHIMMER_CSS } from '@/lib/design'
 import { Button, Pill, Card, Modal, Input as DSInput, Textarea as DSTextarea, Skeleton, EmptyState, VendorPill, PrimitivesGlobalStyles, PALETTE } from '@/components/ui/primitives'
 import { VENDORS } from '@/lib/learn/vendors'
 import { SECTORS } from '@/lib/learn/sectors'
@@ -838,12 +838,10 @@ export default function Home() {
     load(); setTimeout(() => setSaved(false), 3000)
   }
 
-  function vendorColor(v: string) {
-    if (v?.includes('Manhattan')) return C.red
-    if (v?.includes('Blue Yonder')) return C.blue
-    if (v?.includes('SAP')) return C.amber
-    if (v?.includes('Oracle')) return C.teal
-    return C.gray
+  function vendorColor(_v: string) {
+    // Vendor pills now use neutral ink for the label; brand colour lives on the
+    // border + a tiny dot. Yellow is reserved for primary CTA + signature flourish.
+    return C.text
   }
   function newsDateColor(iso: string | null): { bg: string; fg: string; border: string; label: string } {
     if (!iso) return { bg: C.surfaceMuted, fg: C.textMuted, border: C.border, label: 'no date' }
@@ -943,7 +941,7 @@ export default function Home() {
             { label: 'Tracked', value: companies.length, accent: C.text },
             { label: 'Manhattan', value: totalManhattan, accent: C.red },
             { label: 'Blue Yonder', value: totalBlueYonder, accent: C.blue },
-            { label: 'Unknown', value: totalUnknown, accent: C.yellowBorder },
+            { label: 'Unknown', value: totalUnknown, accent: C.textMuted },
             { label: 'News last 7d', value: recentNews, accent: C.blue }
           ]
           const sortedNews = [...allNewsItems].sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
