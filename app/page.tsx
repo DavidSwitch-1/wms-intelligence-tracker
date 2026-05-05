@@ -982,7 +982,7 @@ export default function Home() {
             return `${d > 0 ? '+' : ''}${d} vs last week`
           }
           const stats = [
-            { label: 'Tracked', value: companies.length, series: seriesTracked, delta: `+${seriesCompaniesNew.slice(-7).reduce((a,b)=>a+b,0)} this week`, dotColor: '' },
+            { label: 'Tracked', value: companies.length, series: seriesTracked, delta: ((): string => { const n: number = seriesCompaniesNew.slice(-7).reduce((a:number,b:number)=>a+b,0); return n > 0 ? `+${n} this week` : 'all-time' })(), dotColor: '' },
             { label: 'Manhattan', value: totalManhattan, series: seriesNewsForBrand('Manhattan'), delta: deltaText(seriesNewsForBrand('Manhattan')), dotColor: P.vendor.manhattan },
             { label: 'Blue Yonder', value: totalBlueYonder, series: seriesNewsForBrand('Blue Yonder'), delta: deltaText(seriesNewsForBrand('Blue Yonder')), dotColor: P.vendor.blueYonder },
             { label: 'Unknown', value: totalUnknown, series: seriesUnknown, delta: deltaText(seriesUnknown), dotColor: '' },
@@ -1381,8 +1381,8 @@ export default function Home() {
                     style={{ background: active ? s.bg : C.surface, border:`1px solid ${active ? s.border : C.border}`,
                       borderRadius:12, padding:'16px 20px', cursor:'pointer', transition:'all 0.15s',
                       boxShadow: active ? `0 0 0 2px ${s.border}` : '0 1px 3px rgba(0,0,0,0.06)' }}>
-                    <div style={{ fontSize:28, fontWeight:700, color:s.color, lineHeight:1 }}>{s.value}</div>
-                    <div style={{ fontSize:12, color: active ? s.color : C.textSub, marginTop:6, fontWeight: active ? 600 : 400 }}>{s.label}</div>
+                    <div style={{ fontSize:32, fontWeight:800, letterSpacing:'-0.02em', color:C.text, lineHeight:1 }}>{s.value}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:8, fontSize:11, color: active ? C.text : C.textMuted, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}><span style={{ width:6, height:6, borderRadius:'50%', background:s.color, display:'inline-block', flexShrink:0 }} aria-hidden />{s.label}</div>
                     {active && s.filter !== 'news' && s.filter !== 'All' && <div style={{ fontSize:10, color:s.color, marginTop:2, opacity:0.7 }}>● Active filter</div>}
                   {active && s.filter === 'All' && <div style={{ fontSize:10, color:s.color, marginTop:2, opacity:0.7 }}>● Showing all</div>}
                   </div>
