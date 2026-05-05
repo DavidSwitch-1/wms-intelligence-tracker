@@ -183,6 +183,12 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeResult, setGeocodeResult] = useState<{ processed: number; geocoded: number; failed: number } | null>(null)
+  const [toasts, setToasts] = useState<Array<{id: string; type: 'success'|'error'|'info'; message: string}>>([])
+  function showToast(type: 'success'|'error'|'info', message: string) {
+    const id = Math.random().toString(36).slice(2)
+    setToasts(t => [...t, {id, type, message}])
+    setTimeout(() => setToasts(prev => prev.filter(x => x.id !== id)), 4000)
+  }
   const [tab, setTab] = useState<'dashboard'|'map'|'db'|'chat'|'add'|'news'|'learn'>('dashboard')
   const [learnView, setLearnView] = useState<'vendors'|'sectors'|'glossary'|'ask'>('vendors')
   const [learnVendorSlug, setLearnVendorSlug] = useState<string|null>(null)
@@ -384,7 +390,7 @@ export default function Home() {
       await load()
     } catch (e: any) {
       setGeocodeResult({ processed: 0, geocoded: 0, failed: 0 })
-      alert(`Geocoding failed: ${e.message}. Try again in a minute.`)
+      showToast('error', `Geocoding failed: ${e.message}. Try again in a minute.`)
     } finally {
       setGeocoding(false)
     }
@@ -595,7 +601,7 @@ export default function Home() {
       setShareCopied(true)
       setTimeout(() => setShareCopied(false), 4000)
     } catch (e: any) {
-      alert(`Could not create share link: ${e?.message || 'unknown error'}`)
+      showToast('error', `Could not create share link: ${e?.message || 'unknown error'}`)
     } finally {
       setSharingBrief(false)
     }
@@ -1288,7 +1294,7 @@ export default function Home() {
                   </Button>
                 </span>
               ))}
-              <Button variant="ghost" onClick={() => { if (filterVendor === 'All' && !search && !filterStarred) { alert('Set a filter or search first, then save the view.'); return } const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined, starredOnly: filterStarred || undefined } }]) }}
+              <Button variant="ghost" onClick={() => { if (filterVendor === 'All' && !search && !filterStarred) { showToast('info', 'Set a filter or search first, then save the view.'); return } const name = (prompt('Name this view:') || '').trim(); if (!name) return; const id = String(Date.now()); setSavedViews(prev => [...prev, { id, name, filters: { wms: filterVendor !== 'All' ? filterVendor : undefined, query: search || undefined, starredOnly: filterStarred || undefined } }]) }}
                 style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'4px 10px', borderRadius:99, background:'transparent', border:`1px dashed ${C.borderHov}`, fontSize:12, color:C.textSub, cursor:'pointer', fontWeight:600 }}>
                 <Plus size={11} /> Save current view
               </Button>
@@ -2050,8 +2056,30 @@ export default function Home() {
         )}
       </div>
 
+      {toasts.length > 0 && (
+        <div className="wms-toasts" aria-live="polite" aria-atomic="true">
+          {toasts.map(t => (
+            <div key={t.id} className={`wms-toast wms-toast-${t.type}`} role="status">
+              <div className="wms-toast-msg">{t.message}</div>
+              <button onClick={() => setToasts(prev => prev.filter(x => x.id !== t.id))} className="wms-toast-x" aria-label="Dismiss">×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <style>{`
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+        @keyframes toast-slide-in-right{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes toast-slide-in-top{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
+        .wms-toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:380px;pointer-events:none}
+        .wms-toast{pointer-events:auto;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;box-shadow:0 10px 30px rgba(11,28,55,0.18);font-size:13px;font-weight:500;line-height:1.4;animation:toast-slide-in-right 240ms cubic-bezier(0.4,0,0.2,1)}
+        .wms-toast-success{background:#0E7C7B;color:#fff}
+        .wms-toast-error{background:#B23A48;color:#fff}
+        .wms-toast-info{background:#0B1C37;color:#fff;border:1px solid rgba(254,204,1,0.35)}
+        .wms-toast-msg{flex:1;line-height:1.4}
+        .wms-toast-x{background:transparent;border:none;color:rgba(255,255,255,0.85);font-size:18px;line-height:1;cursor:pointer;padding:4px 6px;border-radius:4px;font-weight:600}
+        .wms-toast-x:hover{background:rgba(255,255,255,0.15)}
+        @media (max-width:768px){.wms-toasts{top:16px;bottom:auto;left:50%;right:auto;transform:translateX(-50%);align-items:center;max-width:calc(100vw - 32px);width:calc(100vw - 32px)}.wms-toast{animation:toast-slide-in-top 200ms cubic-bezier(0.4,0,0.2,1);width:100%}}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         *{box-sizing:border-box}
         input::placeholder{color:#9ca3af}
