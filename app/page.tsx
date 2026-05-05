@@ -184,6 +184,16 @@ export default function Home() {
   const [geocoding, setGeocoding] = useState(false)
   const [geocodeResult, setGeocodeResult] = useState<{ processed: number; geocoded: number; failed: number } | null>(null)
   const [toasts, setToasts] = useState<Array<{id: string; type: 'success'|'error'|'info'; message: string}>>([])
+  function hasHotSignal(c: any) {
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+    return ((c && c.news_updates) || []).some((n: any) => {
+      const ts = new Date(n.published_at || n.created_at).getTime()
+      if (isNaN(ts) || ts < sevenDaysAgo) return false
+      const ss = String(n.signal_status || '').toLowerCase()
+      const st = String(n.signal_type || '').toLowerCase()
+      return ss === 'hot' || st === 'high' || st === 'hot'
+    })
+  }
   function showToast(type: 'success'|'error'|'info', message: string) {
     const id = Math.random().toString(36).slice(2)
     setToasts(t => [...t, {id, type, message}])
@@ -1029,7 +1039,10 @@ export default function Home() {
                           return (
                             <Card key={w.id} variant='default' padding={12} onClick={() => { setSelected(w); gotoTab('db') }} style={{ cursor:'pointer' }}>
                               <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:8, marginBottom:4 }}>
-                                <div style={{ fontWeight:700, fontSize:13, color:C.text, lineHeight:1.25 }}>{w.name}</div>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0, flex:1 }}>
+                                  {hasHotSignal(w) && <span className="pulse-hot" aria-label="Hot signal in last 7 days" title="Hot signal — news in last 7 days" />}
+                                  <div style={{ fontWeight:700, fontSize:13, color:C.text, lineHeight:1.25 }}>{w.name}</div>
+                                </div>
                                 <Star size={13} fill={'#FECC01'} stroke={'#FECC01'} />
                               </div>
                               <div style={{ fontSize:11, color:C.textMuted, marginBottom:6 }}>{[w.industry, w.country, wmsLatest].filter(Boolean).join(' · ')}</div>
@@ -1137,7 +1150,10 @@ export default function Home() {
                         {signalBadge(n.signal_type)}
                         <span style={{ fontSize:11, color:C.textMuted, marginLeft:'auto' }}>{timeAgo(n.published_at || n.created_at)}</span>
                       </div>
-                      <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>{n._company.name}</div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4 }}>
+                        <span className="pulse-hot" aria-label="Active hot signal" />
+                        <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{n._company.name}</div>
+                      </div>
                       <div style={{ fontSize:12, color:C.textSub, lineHeight:1.4 }}>{n.title}</div>
                     </Card>
                   ))}
@@ -1368,9 +1384,12 @@ export default function Home() {
                         >
                           <Star size={15} fill={c.starred ? '#FECC01' : 'none'} stroke={c.starred ? '#FECC01' : '#94A3B8'} />
                         </button>
-                        <div style={{ minWidth:0 }}>
-                        <div style={{ fontWeight:600, fontSize:15, color:C.text }}>{c.name}</div>
-                        <div style={{ color:C.textMuted, fontSize:12, marginTop:1 }}>{[c.industry, c.country].filter(Boolean).join(' · ')}</div>
+                        <div style={{ minWidth:0, display:'flex', alignItems:'center', gap:10 }}>
+                        {hasHotSignal(c) && <span className="pulse-hot" aria-label="Hot signal in last 7 days" title="Hot signal — news in last 7 days" />}
+                        <div style={{ minWidth:0, flex:1 }}>
+                          <div style={{ fontWeight:600, fontSize:15, color:C.text }}>{c.name}</div>
+                          <div style={{ color:C.textMuted, fontSize:12, marginTop:1 }}>{[c.industry, c.country].filter(Boolean).join(' · ')}</div>
+                        </div>
                         </div>
                       </div>
                       <div style={{ display:'flex', gap:6, alignItems:'center' }}>
@@ -2069,6 +2088,8 @@ export default function Home() {
 
       <style>{`
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0.15}}
+        @keyframes pulse-hot{0%,100%{box-shadow:0 0 0 0 rgba(254,204,1,0.7)}50%{box-shadow:0 0 0 4px rgba(254,204,1,0)}}
+        .pulse-hot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#FECC01;flex-shrink:0;animation:pulse-hot 1.8s ease-out infinite}
         @keyframes toast-slide-in-right{from{transform:translateX(120%);opacity:0}to{transform:translateX(0);opacity:1}}
         @keyframes toast-slide-in-top{from{transform:translateY(-120%);opacity:0}to{transform:translateY(0);opacity:1}}
         .wms-toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:380px;pointer-events:none}
