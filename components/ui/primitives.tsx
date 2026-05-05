@@ -100,6 +100,7 @@ export function Button({
   return (
     <button
       {...rest}
+      className={[(rest as any).className, variant === 'plain' ? 'swi-press' : 'swi-cta'].filter(Boolean).join(' ')}
       disabled={disabled || loading}
       style={composed}
       onFocus={(e) => { Object.assign(e.currentTarget.style, focusRing); rest.onFocus?.(e) }}
