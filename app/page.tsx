@@ -899,9 +899,12 @@ export default function Home() {
           ] as [typeof tab, string, any][]).map(([t, label, Icon]) => (
             <Button variant="plain" key={t} onClick={() => { gotoTab(t); setSelected(null) }}
               style={{ padding:'7px 16px', borderRadius:8, fontSize:13, cursor:'pointer', border:'none',
-                background: tab===t ? C.blueLight : 'transparent',
-                color: tab===t ? C.blue : C.textSub,
-                fontWeight: tab===t ? 600 : 400 }}>
+                background: 'transparent',
+                color: tab===t ? C.text : C.textSub,
+                fontWeight: tab===t ? 600 : 500,
+                borderRadius: 0,
+                boxShadow: tab===t ? `inset 0 -2px 0 0 ${P.yellow}` : 'none',
+                transition: 'color 160ms ease, box-shadow 160ms ease' }}>
               <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><Icon size={14} />{label}</span>
             </Button>
           ))}
@@ -1302,7 +1305,7 @@ export default function Home() {
           <div style={{ padding: 24 }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 16 }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: C.text }}>Map view</h2>
+                <div style={{ marginBottom: 14 }}><h2 style={{ ...T.display, margin: 0, color: C.text, fontSize: isMobile ? 22 : 28 }}>Map view</h2><div style={{ marginTop: 10, width: 48, height: 4, borderRadius: 2, background: P.yellow }} aria-hidden /></div>
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: C.textMuted }}>
                   Showing {companies.filter((c: any) => c.latitude && c.longitude).length} of {companies.length} companies. Companies without a known location are hidden until the next geocode pass.
                 </p>
@@ -1530,9 +1533,9 @@ export default function Home() {
             <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:28, boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
                 <div>
-                  <h2 style={{ margin:0, fontSize:22, fontWeight:700, color:C.text }}>{selected.name}{selected.is_3pl && (
+                  <div style={{ marginBottom: 14 }}><h2 style={{ ...T.display, margin: 0, color: C.text, fontSize: isMobile ? 22 : 28 }}>{selected.name}{selected.is_3pl && (
                     <Pill variant="custom" style={{ marginLeft: 8, padding:'2px 8px', borderRadius: 999, background: C.yellowLight, border:`1px solid ${C.yellowBorder}`, color: C.text, fontSize: 11, fontWeight: 600 }}>3PL Provider</Pill>
-                  )}</h2>
+                  )}</h2><div style={{ marginTop: 10, width: 48, height: 4, borderRadius: 2, background: P.yellow }} aria-hidden /></div>
                   <p style={{ margin:'4px 0 0', color:C.textSub, fontSize:14 }}>{[selected.industry, selected.country, selected.region].filter(Boolean).join(' · ')}</p>
                   {selected.third_party_logistics && (
                     <div style={{ display:'flex', alignItems:'center', gap: 8, fontSize: 13, color: C.textSub, marginTop: 6 }}>
@@ -1958,7 +1961,10 @@ export default function Home() {
         {tab === 'learn' && (
           <div style={{ maxWidth: 1200 }}>
             <div style={{ marginBottom: 22 }}>
-              <h1 style={{ margin: '0 0 4px', fontSize: 26, fontWeight: 700, color: C.text, letterSpacing: -0.4 }}>Learn</h1>
+              <div style={{ marginBottom: 4 }}>
+                <h1 style={{ ...T.hero, margin: 0, color: C.text, fontSize: isMobile ? 26 : 32 }}>Learn</h1>
+                <div style={{ marginTop: 10, width: 56, height: 4, borderRadius: 2, background: P.yellow }} aria-hidden />
+              </div>
               <p style={{ margin: 0, fontSize: 14, color: C.textSub }}>WMS market reference for swi-tch consultants</p>
             </div>
             <div role='tablist' style={{ display: 'flex', gap: 6, marginBottom: 20, borderBottom: '1px solid ' + C.border, paddingBottom: 10, flexWrap: 'wrap' }}>
