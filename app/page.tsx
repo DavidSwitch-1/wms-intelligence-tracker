@@ -1452,17 +1452,17 @@ export default function Home() {
             )}
 
             {/* Cards */}
-            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
               {filtered.map((c: any, i: number) => {
                 const isUnknown = c.wms_entries?.every((w: any) => w.wms_system === 'Unknown')
                 const isResearching = researching[c.id]
                 const researchResult = researchResults[c.id]
                 return (
                   <div key={c.id} data-kb-row={i} onClick={() => setSelected(c)}
-                    style={{ background: tab==='db' && i===highlightedIndex ? '#FFF8DA' : C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:'14px 20px', cursor:'pointer', transition:'all 0.12s', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', outline: tab==='db' && i===highlightedIndex ? '2px solid #FECC01' : 'none', outlineOffset: tab==='db' && i===highlightedIndex ? '-2px' : 0 }}
+                    style={{ background: tab==='db' && i===highlightedIndex ? '#FFF8DA' : C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 16px', cursor:'pointer', transition:'all 0.12s', boxShadow:'0 1px 3px rgba(0,0,0,0.04)', outline: tab==='db' && i===highlightedIndex ? '2px solid #FECC01' : 'none', outlineOffset: tab==='db' && i===highlightedIndex ? '-2px' : 0 }}
                     onMouseEnter={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor=C.blue; el.style.boxShadow='0 2px 8px rgba(37,99,235,0.1)' }}
                     onMouseLeave={e => { const el = e.currentTarget as HTMLDivElement; el.style.borderColor=C.border; el.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:4 }}>
                       <div style={{ display:'flex', alignItems:'flex-start', gap:10, minWidth:0 }}>
                         <button
                           onClick={(e) => { e.stopPropagation(); toggleStar(c.id, !c.starred) }}
