@@ -1,44 +1,50 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
-import { Inter } from 'next/font/google'
+import { Inter, Source_Serif_4 } from 'next/font/google'
 import { renderMarkdown } from '@/lib/markdown'
 
 // Public share page for a brief.
-// No login. The /share/[token] URL itself is the credential.
+// No login. The /share/[token] route is gated by token only.
 
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  weight: ['400', '500', '600', '700', '800'],
-})
-
-// swi-tch palette (see app/page.tsx + lib/design.ts).
 const C = {
   cream: '#FAF9F5',
   paper: '#FFFFFF',
   navy: '#0B1C37',
   navyMute: '#1F3056',
   yellow: '#FECC01',
+  yellowSoft: '#FFF5C2',
   teal: '#0E7C7B',
   ink: '#0B1C37',
   inkMute: '#5C6376',
   inkSoft: '#8A8F9E',
   border: '#E8E5DD',
   borderSoft: '#F0EEE6',
+  ruler: 'rgba(254,204,1,0.55)',
 }
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
+const serif = Source_Serif_4({
+  subsets: ['latin'],
+  variable: '--font-serif',
+  weight: ['400','500','600','700'],
+  display: 'swap',
+})
 
 type SharedBrief = {
   company_name: string
   brief_content: string
   created_at: string
-  view_count: number
 }
 
 async function siteOrigin(): Promise<string> {
   const h = await headers()
   const proto = h.get('x-forwarded-proto') || 'https'
-  const host = h.get('x-forwarded-host') || h.get('host')
+  const host = h.get('host')
   if (host) return `${proto}://${host}`
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
   return 'http://localhost:3000'
@@ -58,10 +64,8 @@ async function fetchBrief(token: string): Promise<SharedBrief | null> {
 }
 
 function timeAgo(iso: string): string {
-  const ts = new Date(iso).getTime()
-  if (Number.isNaN(ts)) return ''
-  const diff = Math.max(0, Date.now() - ts)
-  const m = Math.floor(diff / 60000)
+  const ms = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(ms / 60000)
   if (m < 1) return 'just now'
   if (m < 60) return `${m}m ago`
   const h = Math.floor(m / 60)
@@ -72,234 +76,243 @@ function timeAgo(iso: string): string {
 }
 
 export async function generateMetadata(
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ): Promise<Metadata> {
-  const brief = await fetchBrief(params.token)
-  if (!brief) {
-    return {
-      title: 'Brief not found — swi-tch',
-      description: 'This shared brief is no longer available.',
-    }
-  }
+  const { token } = await params
+  const brief = await fetchBrief(token)
+  if (!brief) return { title: 'Brief not found · swi·tch' }
   const origin = await siteOrigin()
-  const title = `${brief.company_name} — recruitment brief`
-  const description = `A WMS recruitment brief on ${brief.company_name}, prepared by swi-tch.`
-  const url = `${origin}/share/${params.token}`
+  const title = `${brief.company_name} — WMS intelligence brief`
+  const description = `A focused WMS intelligence brief on ${brief.company_name}, prepared by swi·tch.`
+  const url = `${origin}/share/${token}`
   return {
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      url,
-      siteName: 'swi-tch',
-      type: 'article',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-    },
-    robots: { index: false, follow: false },
+    openGraph: { title, description, url, siteName: 'swi·tch', type: 'article' },
+    twitter: { card: 'summary_large_image', title, description },
   }
 }
 
 export default async function SharedBriefPage(
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
-  const brief = await fetchBrief(params.token)
+  const { token } = await params
+  const brief = await fetchBrief(token)
   if (!brief) notFound()
-
-  const html = renderMarkdown(brief.brief_content)
-  const ago = timeAgo(brief.created_at)
 
   return (
     <div
-      className={inter.className}
+      className={`${inter.variable} ${serif.variable}`}
       style={{
         minHeight: '100vh',
         background: C.cream,
-        color: C.ink,
         fontFamily: 'var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
         WebkitFontSmoothing: 'antialiased',
+        MozOsxFontSmoothing: 'grayscale',
       }}
     >
-      {/* Header strip */}
+      {/* Top mark */}
       <header
         style={{
-          background: C.navy,
-          color: '#fff',
-          borderBottom: `3px solid ${C.yellow}`,
+          padding: '40px 24px 0',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
         }}
       >
         <div
-          className="share-header-inner"
           style={{
-            maxWidth: 880,
-            margin: '0 auto',
-            padding: '14px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            flexWrap: 'wrap',
+            fontSize: 22,
+            fontWeight: 700,
+            letterSpacing: '-0.01em',
+            color: C.navy,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span
-              style={{
-                fontWeight: 800,
-                fontSize: 18,
-                letterSpacing: '-0.01em',
-                color: '#fff',
-              }}
-            >
-              swi
-              <span style={{ color: C.yellow }}>·</span>
-              tch
-            </span>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: 'rgba(255,255,255,0.7)',
-              }}
-            >
-              WMS Intelligence
-            </span>
-          </div>
-          <div
-            style={{
-              fontSize: 11,
-              color: 'rgba(255,255,255,0.7)',
-              textAlign: 'right',
-            }}
-          >
-            Brief shared by{' '}
-            <span style={{ color: '#fff', fontWeight: 600 }}>david@swi-tch.com</span>
-            {ago ? <span> · {ago}</span> : null}
-          </div>
+          swi
+          <span style={{ color: C.yellow }}>·</span>
+          tch
+        </div>
+        <div
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: '0.18em',
+            color: C.inkSoft,
+            textTransform: 'uppercase',
+          }}
+        >
+          WMS · INTELLIGENCE
         </div>
       </header>
 
-      {/* Main content */}
-      <main
-        className="share-main"
+      {/* Hero — company name with signature yellow underline */}
+      <section
         style={{
           maxWidth: 880,
-          margin: '0 auto',
-          padding: '40px 24px 24px 24px',
+          margin: '32px auto 0',
+          padding: '0 24px',
+          textAlign: 'center',
         }}
       >
-        <div
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-            color: C.teal,
-            marginBottom: 8,
-          }}
-        >
-          Recruitment Brief
-        </div>
         <h1
           style={{
             margin: 0,
-            fontSize: 36,
-            lineHeight: 1.15,
+            fontSize: 'clamp(28px, 4vw, 36px)',
+            fontWeight: 800,
             letterSpacing: '-0.02em',
             color: C.navy,
-            fontWeight: 800,
+            lineHeight: 1.15,
           }}
         >
           {brief.company_name}
         </h1>
         <div
+          aria-hidden
           style={{
-            marginTop: 6,
-            fontSize: 12,
+            margin: '14px auto 0',
+            width: 64,
+            height: 4,
+            borderRadius: 2,
+            background: C.yellow,
+          }}
+        />
+        <div
+          style={{
+            marginTop: 18,
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.16em',
             color: C.inkSoft,
+            textTransform: 'uppercase',
           }}
         >
-          {brief.view_count} view{brief.view_count === 1 ? '' : 's'}
+          Brief · prepared {timeAgo(brief.created_at)}
         </div>
+      </section>
 
-        <div
+      {/* Body */}
+      <main
+        className="share-main"
+        style={{
+          maxWidth: 760,
+          margin: '0 auto',
+          padding: '40px 24px 24px 24px',
+        }}
+      >
+        <article
+          className="share-prose"
           style={{
             marginTop: 24,
             background: C.paper,
             border: `1px solid ${C.border}`,
-            borderRadius: 12,
-            padding: '28px 32px',
-            fontSize: 15,
-            lineHeight: 1.65,
+            borderRadius: 14,
+            padding: 'clamp(24px, 4vw, 44px)',
+            fontFamily: 'var(--font-serif), Charter, "Source Serif 4", "Iowan Old Style", Georgia, serif',
+            fontSize: 16,
+            lineHeight: 1.75,
             color: C.ink,
-            boxShadow: '0 1px 2px rgba(11,28,55,0.04)',
+            boxShadow: '0 1px 2px rgba(11,28,55,0.04), 0 12px 32px rgba(11,28,55,0.06)',
           }}
-          className="share-brief-body"
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+        >
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
+              .share-prose h1, .share-prose h2, .share-prose h3 {
+                font-family: var(--font-inter), system-ui, sans-serif;
+                color: ${C.navy};
+                letter-spacing: -0.01em;
+              }
+              .share-prose h2 {
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: ${C.inkMute};
+                margin: 28px 0 8px;
+                padding-bottom: 6px;
+                border-bottom: 1px solid ${C.borderSoft};
+              }
+              .share-prose h3 {
+                font-size: 17px;
+                font-weight: 700;
+                margin: 22px 0 8px;
+              }
+              .share-prose p { margin: 0 0 14px; }
+              .share-prose ul, .share-prose ol { padding-left: 22px; margin: 0 0 14px; }
+              .share-prose li { margin-bottom: 6px; }
+              .share-prose strong { color: ${C.navy}; font-weight: 600; }
+              .share-prose a { color: ${C.teal}; text-decoration: none; border-bottom: 1px solid rgba(14,124,123,0.3); }
+              .share-prose a:hover { border-bottom-color: ${C.teal}; }
+              .share-prose blockquote {
+                margin: 14px 0;
+                padding: 8px 14px;
+                border-left: 3px solid ${C.yellow};
+                background: ${C.yellowSoft};
+                border-radius: 0 8px 8px 0;
+                color: ${C.ink};
+              }
+              .share-prose code {
+                background: ${C.borderSoft};
+                padding: 1px 5px;
+                border-radius: 4px;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+                font-size: 0.92em;
+                color: ${C.navy};
+              }
+              `,
+            }}
+          />
+          <div dangerouslySetInnerHTML={{ __html: renderMarkdown(brief.brief_content) }} />
+        </article>
+      </main>
 
+      {/* Footer */}
+      <footer
+        style={{
+          maxWidth: 760,
+          margin: '0 auto',
+          padding: '8px 24px 56px',
+        }}
+      >
+        <div
+          aria-hidden
+          style={{
+            height: 1,
+            background: `linear-gradient(90deg, transparent 0%, ${C.ruler} 50%, transparent 100%)`,
+            margin: '0 0 24px',
+          }}
+        />
         <div
           style={{
-            marginTop: 28,
-            paddingTop: 18,
-            borderTop: `1px solid ${C.border}`,
-            fontSize: 12,
-            color: C.inkMute,
+            fontSize: 10,
+            fontWeight: 600,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: C.inkSoft,
+            textAlign: 'center',
             display: 'flex',
-            justifyContent: 'space-between',
-            gap: 12,
-            flexWrap: 'wrap',
+            flexDirection: 'column',
+            gap: 6,
           }}
         >
           <div>
             Generated by{' '}
             <a
               href="https://swi-tch.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: C.teal, fontWeight: 600, textDecoration: 'none' }}
+              style={{ color: C.navy, textDecoration: 'none' }}
             >
-              swi-tch.com
+              swi
+              <span style={{ color: C.yellow }}>·</span>
+              tch.com
             </a>{' '}
             — WMS recruitment intelligence
           </div>
-          <div style={{ color: C.inkSoft }}>
+          <div style={{ color: C.inkSoft, letterSpacing: '0.14em' }}>
             Confidential · for the recipient only
           </div>
         </div>
-      </main>
-
-      <footer
-        style={{
-          maxWidth: 880,
-          margin: '0 auto',
-          padding: '16px 24px 40px 24px',
-          fontSize: 11,
-          color: C.inkSoft,
-          textAlign: 'center',
-        }}
-      >
-        This brief is confidential and intended for the recipient only.
       </footer>
-
-      {/* Mobile tightening */}
-      <style>{`
-        @media (max-width: 640px) {
-          .share-header-inner { padding: 12px 16px !important; }
-          .share-main { padding: 24px 16px 16px 16px !important; }
-          .share-main h1 { font-size: 26px !important; line-height: 1.2 !important; }
-          .share-brief-body { padding: 18px 18px !important; font-size: 14px !important; }
-        }
-        .share-brief-body h1, .share-brief-body h2, .share-brief-body h3 {
-          color: ${C.navy};
-        }
-        .share-brief-body a { color: ${C.teal} !important; }
-      `}</style>
     </div>
   )
 }
