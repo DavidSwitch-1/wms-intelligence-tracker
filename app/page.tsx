@@ -963,7 +963,15 @@ export default function Home() {
                 )
               })()}
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? 8 : 10, marginBottom:24 }}>
-                {stats.map(s => (
+                {refreshing && companies.length === 0 ? (
+                  Array.from({length: isMobile ? 4 : 5}).map((_, i) => (
+                    <Card key={`kpi-skel-${i}`} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
+                      <Skeleton variant="line" width="60%" height={11} />
+                      <div style={{ height:6 }} />
+                      <Skeleton variant="line" width="44%" height={26} />
+                    </Card>
+                  ))
+                ) : stats.map(s => (
                   <Card key={s.label} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:'14px 16px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
                     <div style={{ fontSize:11, color:C.textMuted, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>{s.label}</div>
                     <div style={{ fontSize:26, fontWeight:700, color:s.accent, marginTop:4, lineHeight:1 }}>{s.value}</div>
@@ -2160,9 +2168,11 @@ export default function Home() {
             </div>
             <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.6, color:C.text }}>
               {briefLoading && (
-                <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
-                  <RefreshCw size={16} className="spin" />
-                  Generating brief… this takes ~10–20 seconds.
+                <div style={{ padding:'24px 0', display:'flex', flexDirection:'column', gap:12 }} aria-label="Generating brief">
+                  <Skeleton variant="line" width="38%" height={16} />
+                  <Skeleton variant="line" width="100%" />
+                  <Skeleton variant="line" width="92%" />
+                  <Skeleton variant="line" width="76%" />
                 </div>
               )}
               {!briefLoading && briefError && (
@@ -2239,9 +2249,11 @@ export default function Home() {
             </div>
             <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.65, color:C.text, background:C.bg }}>
               {inmailLoading && (
-                <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
-                  <RefreshCw size={16} className="spin" />
-                  Drafting InMail… this takes ~5–10 seconds.
+                <div style={{ padding:'24px 0', display:'flex', flexDirection:'column', gap:12 }} aria-label="Drafting InMail">
+                  <Skeleton variant="line" width="38%" height={16} />
+                  <Skeleton variant="line" width="100%" />
+                  <Skeleton variant="line" width="88%" />
+                  <Skeleton variant="line" width="72%" />
                 </div>
               )}
               {!inmailLoading && inmailError && (
@@ -2287,7 +2299,19 @@ export default function Home() {
               </Button>
             </div>
             <div style={{ padding:'14px 22px', overflowY:'auto', flex:1 }}>
-              {lookalikeLoading && (<div className="spin" style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>Searching…</div>)}
+              {lookalikeLoading && (
+                <div style={{ padding:'12px 0', display:'flex', flexDirection:'column', gap:10 }} aria-label="Searching lookalikes">
+                  {[0,1,2,3,4].map(i => (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom:`1px solid ${C.border}` }}>
+                      <Skeleton variant="avatar" width={32} height={32} />
+                      <div style={{ flex:1, display:'flex', flexDirection:'column', gap:6 }}>
+                        <Skeleton variant="line" width="50%" height={14} />
+                        <Skeleton variant="line" width="80%" height={11} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {!lookalikeLoading && lookalikeError && (<div style={{ color:C.red, fontSize:13, padding:'12px 0' }}>{lookalikeError}</div>)}
               {!lookalikeLoading && !lookalikeError && lookalikeData.length === 0 && (<div style={{ color:C.textSub, fontSize:13, padding:'30px 0', textAlign:'center' }}>No close lookalikes found yet — try expanding industries via the bulk import.</div>)}
               {!lookalikeLoading && lookalikeData.length > 0 && lookalikeData.slice(0,10).map((row: any) => {
@@ -2346,9 +2370,14 @@ export default function Home() {
             </div>
             <div style={{ padding:'22px 26px', overflow:'auto', flex:1, fontSize:14, lineHeight:1.6, color:C.text, display:'flex', flexDirection:'column', gap:18 }}>
               {linkedinLoading && (
-                <div style={{ display:'flex', alignItems:'center', gap:10, color:C.textSub, padding:'30px 0' }}>
-                  <RefreshCw size={16} className="spin" />
-                  Drafting three posts… this takes ~10–20 seconds.
+                <div style={{ padding:'24px 0', display:'flex', flexDirection:'column', gap:14 }} aria-label="Drafting LinkedIn posts">
+                  {[0,1,2].map(i => (
+                    <div key={i} style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      <Skeleton variant="line" width="32%" height={14} />
+                      <Skeleton variant="line" width="100%" />
+                      <Skeleton variant="line" width="88%" />
+                    </div>
+                  ))}
                 </div>
               )}
               {linkedinError && (
