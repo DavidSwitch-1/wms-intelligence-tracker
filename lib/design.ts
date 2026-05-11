@@ -359,4 +359,40 @@ export const SHIMMER_CSS = `
   content: ''; position: absolute; left: 0; bottom: -10px;
   width: 64px; height: 4px; border-radius: 2px; background: #FECC01;
 }
+
+
+/* Sparkline draw-in + endpoint pulse */
+.swi-spark-path {
+  stroke-dasharray: var(--swi-spark-len, 100);
+  stroke-dashoffset: var(--swi-spark-len, 100);
+  animation: swi-spark-draw 800ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation-delay: calc(var(--swi-spark-idx, 0) * 80ms);
+  will-change: stroke-dashoffset;
+}
+@keyframes swi-spark-draw {
+  from { stroke-dashoffset: var(--swi-spark-len, 100); }
+  to { stroke-dashoffset: 0; }
+}
+.swi-spark-dot {
+  opacity: 0;
+  transform-origin: center;
+  animation:
+    swi-spark-dot-in 280ms cubic-bezier(0.4, 0, 0.2, 1) forwards,
+    swi-spark-dot-pulse 2s ease-in-out infinite;
+  animation-delay:
+    calc(var(--swi-spark-idx, 0) * 80ms + 760ms),
+    calc(var(--swi-spark-idx, 0) * 80ms + 1040ms);
+}
+@keyframes swi-spark-dot-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes swi-spark-dot-pulse {
+  0%, 100% { opacity: 1; r: 2; }
+  50% { opacity: 0.6; r: 2.5; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .swi-spark-path { animation: none; stroke-dashoffset: 0; }
+  .swi-spark-dot { animation: none; opacity: 1; }
+}
 `
