@@ -940,7 +940,7 @@ export default function Home() {
           const totalManhattan = companies.filter((c: any) => c.wms_entries?.some((w: any) => (w.vendor || '').includes('Manhattan'))).length
           const totalBlueYonder = companies.filter((c: any) => c.wms_entries?.some((w: any) => (w.vendor || '').includes('Blue Yonder'))).length
           const totalUnknown = companies.filter((c: any) => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown')).length
-          // 14-day sparkline series + deltas
+          // 14-day sparkline series + deltas — cumulative discovery curves
           const SERIES_DAYS = 14
           const DAY_MS = 86400000
           const dayKeys: number[] = Array.from({ length: SERIES_DAYS }, (_, i) => {
@@ -956,38 +956,58 @@ export default function Home() {
             for (let i = 0; i < dayKeys.length; i++) if (tt === dayKeys[i]) return i
             return -1
           }
+          const discoveryTime = (c: any): number | null => {
+            const iso = c.discovered_at || c.created_at || c.updated_at
+            if (!iso) return null
+            const d = new Date(iso); if (isNaN(d.getTime())) return null
+            return d.getTime()
+          }
+          // Cumulative-by-day: count of companies (matching predicate) whose discovery time falls on or before each day-end.
+          const cumulativeBy = (predicate: (c: any) => boolean): number[] => {
+            return dayKeys.map((dayStart) => {
+              const dayEnd = dayStart + DAY_MS - 1
+              let n = 0
+              for (const c of companies as any[]) {
+                if (!predicate(c)) continue
+                const t = discoveryTime(c)
+                if (t == null) continue
+                if (t <= dayEnd) n++
+              }
+              return n
+            })
+          }
+          const hasVendor = (c: any, target: string) => c.wms_entries?.some((w: any) => String(w.wms_system || '').toLowerCase().includes(target))
+          const hasUnknownVendor = (c: any) => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown')
+          const seriesTracked = cumulativeBy(() => true)
+          const seriesManhattan = cumulativeBy((c) => hasVendor(c, 'manhattan'))
+          const seriesBlueYonder = cumulativeBy((c) => hasVendor(c, 'blue yonder'))
+          const seriesUnknownVendor = cumulativeBy(hasUnknownVendor)
           const seriesNewsAll = dayKeys.map((_, i) =>
             allNewsItems.filter((n: any) => dayBucket(n.published_at || n.created_at) === i).length
-          )
-          const seriesNewsForBrand = (brand: string) => dayKeys.map((_, i) =>
-            allNewsItems.filter((n: any) => {
-              const v = String(n.proposed_wms_system || '').toLowerCase()
-              return dayBucket(n.published_at || n.created_at) === i && v.includes(brand.toLowerCase())
-            }).length
-          )
-          const seriesCompaniesNew = dayKeys.map((_, i) =>
-            companies.filter((c: any) => dayBucket(c.created_at) === i).length
-          )
-          let runTotal = Math.max(0, companies.length - seriesCompaniesNew.reduce((a, b) => a + b, 0))
-          const seriesTracked = seriesCompaniesNew.map((v) => (runTotal += v))
-          const seriesUnknown = dayKeys.map((_, i) =>
-            companies.filter((c: any) => c.wms_entries?.some((w: any) => w.wms_system === 'Unknown') && dayBucket(c.created_at) === i).length
           )
           const sum = (a: number[]) => a.reduce((x, y) => x + y, 0)
           const last7 = (a: number[]) => sum(a.slice(-7))
           const prev7 = (a: number[]) => sum(a.slice(0, 7))
-          const deltaText = (a: number[]) => {
+          const deltaDaily = (a: number[]) => {
             const d = last7(a) - prev7(a)
             if (d === 0) return 'no change'
             return `${d > 0 ? '+' : ''}${d} vs last week`
           }
+          const deltaCumulative = (a: number[]) => {
+            if (a.length < 2) return 'no change'
+            const cur = a[a.length - 1]
+            const mid = a[Math.max(0, a.length - 8)]
+            const d = cur - mid
+            if (d === 0) return 'no change'
+            return `${d > 0 ? '+' : ''}${d} vs last week`
+          }
           const stats = [
-            { label: 'Tracked', value: companies.length, series: seriesTracked, delta: ((): string => { const n: number = seriesCompaniesNew.slice(-7).reduce((a:number,b:number)=>a+b,0); return n > 0 ? `+${n} this week` : 'all-time' })(), dotColor: '' },
-            { label: 'Manhattan', value: totalManhattan, series: seriesNewsForBrand('Manhattan'), delta: deltaText(seriesNewsForBrand('Manhattan')), dotColor: P.vendor.manhattan },
-            { label: 'Blue Yonder', value: totalBlueYonder, series: seriesNewsForBrand('Blue Yonder'), delta: deltaText(seriesNewsForBrand('Blue Yonder')), dotColor: P.vendor.blueYonder },
-            { label: 'Unknown', value: totalUnknown, series: seriesUnknown, delta: deltaText(seriesUnknown), dotColor: '' },
-            { label: 'News last 7d', value: recentNews, series: seriesNewsAll, delta: deltaText(seriesNewsAll), dotColor: P.teal },
-          ]
+            { label: 'Tracked', value: companies.length, series: seriesTracked, delta: deltaCumulative(seriesTracked), dotColor: '' },
+            { label: 'Manhattan', value: totalManhattan, series: seriesManhattan, delta: deltaCumulative(seriesManhattan), dotColor: P.vendor.manhattan },
+            { label: 'Blue Yonder', value: totalBlueYonder, series: seriesBlueYonder, delta: deltaCumulative(seriesBlueYonder), dotColor: P.vendor.blueYonder },
+            { label: 'Unknown', value: totalUnknown, series: seriesUnknownVendor, delta: deltaCumulative(seriesUnknownVendor), dotColor: '' },
+            { label: 'News last 7d', value: recentNews, series: seriesNewsAll, delta: deltaDaily(seriesNewsAll), dotColor: P.teal },
+          ]]
           const sortedNews = [...allNewsItems].sort((a: any, b: any) => new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime())
           return (
             <div>
@@ -1050,29 +1070,62 @@ export default function Home() {
                       <Skeleton variant="line" width="44%" height={26} />
                     </Card>
                   ))
-                ) : stats.map(s => {
+                ) : stats.map((s, idx) => {
                               const series = s.series && s.series.length ? s.series : Array(14).fill(0)
-                              const maxV = Math.max(1, ...series)
+                              const minV = Math.min(...series)
+                              const maxV = Math.max(...series)
+                              const isFlat = !(maxV > minV)
                               const w = 64, h = 18
                               const stepX = series.length > 1 ? w / (series.length - 1) : 0
-                              const points = series.map((v, i) => `${(i * stepX).toFixed(2)},${(h - (v / maxV) * (h - 2) - 1).toFixed(2)}`).join(' ')
+                              const norm = (v: number) => isFlat ? 0.5 : ((v - minV) / Math.max(1, (maxV - minV)))
+                              const pts: [number, number][] = series.map((v: number, i: number) => [i * stepX, h - norm(v) * (h - 2) - 1])
+                              const pathD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' ')
+                              let dashLen = 0
+                              for (let i = 1; i < pts.length; i++) {
+                                dashLen += Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1])
+                              }
+                              const endPt = pts[pts.length - 1]
                               const isUp = s.delta && s.delta.includes('+') && !s.delta.startsWith('-')
                               const isDown = s.delta && s.delta.startsWith('-')
                               const deltaColor = s.delta === 'no change' ? C.textMuted : isDown ? P.coral : P.teal
+                              const strokeColor = s.dotColor || P.teal
                               return (
-                              <Card key={s.label} className="swi-lift" style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding: isMobile ? '14px 14px' : '16px 18px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
-                                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, marginBottom: isMobile ? 6 : 8 }}>
-                                  <div style={{ ...T.section, color:C.textMuted, display:'flex', alignItems:'center', gap:6 }}>
-                                    {s.dotColor ? <span style={{ width:6, height:6, borderRadius:'50%', background:s.dotColor, display:'inline-block' }} /> : null}
-                                    <span>{s.label}</span>
+                                <Card key={s.label} className="swi-lift" style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding: isMobile ? '14px 14px' : '16px 18px', boxShadow:'0 1px 2px rgba(11,28,55,0.04)' }}>
+                                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, marginBottom: isMobile ? 6 : 8 }}>
+                                    <div style={{ ...T.section, color:C.textMuted, display:'flex', alignItems:'center', gap:6 }}>
+                                      {s.dotColor ? <span style={{ width:6, height:6, borderRadius:'50%', background:s.dotColor, display:'inline-block' }} /> : null}
+                                      <span>{s.label}</span>
+                                    </div>
+                                    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden style={{ flexShrink: 0, opacity: 0.95, overflow: 'visible' }}>
+                                      {isFlat ? (
+                                        <line x1={0} y1={h/2} x2={w} y2={h/2} stroke={C.border} strokeWidth={1.5} strokeLinecap="round" strokeDasharray="2 3" opacity={0.7} />
+                                      ) : (
+                                        <>
+                                          <path
+                                            d={pathD}
+                                            className="swi-spark-path"
+                                            fill="none"
+                                            stroke={strokeColor}
+                                            strokeWidth={1.5}
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            style={{ ['--swi-spark-len' as any]: dashLen.toFixed(2), ['--swi-spark-idx' as any]: idx }}
+                                          />
+                                          <circle
+                                            className="swi-spark-dot"
+                                            cx={endPt[0]}
+                                            cy={endPt[1]}
+                                            r={2}
+                                            fill={strokeColor}
+                                            style={{ ['--swi-spark-idx' as any]: idx }}
+                                          />
+                                        </>
+                                      )}
+                                    </svg>
                                   </div>
-                                  <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden style={{ flexShrink: 0, opacity: 0.95 }}>
-                                    <polyline points={points} fill="none" stroke={P.teal} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-                                  </svg>
-                                </div>
-                                <div style={{ ...T.kpi, fontSize: isMobile ? 30 : 40, color:C.text }}>{s.value}</div>
-                                <div style={{ ...T.caption, color: deltaColor, marginTop: 6 }}>{s.delta}</div>
-                              </Card>
+                                  <div style={{ ...T.kpi, fontSize: isMobile ? 30 : 40, color:C.text }}>{s.value}</div>
+                                  <div style={{ ...T.caption, color: deltaColor, marginTop: 6 }}>{s.delta}</div>
+                                </Card>
                               )
                             })}
               </div>
